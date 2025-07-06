@@ -113,7 +113,7 @@
 
     if (!user) {
       // Not logged in, redirect to login page
-      window.location.href = "";
+      window.location.href = "https://discord.com/oauth2/authorize?client_id=1385353384147685567&permissions=8&response_type=code&redirect_uri=https%3A%2F%2Fpfnexus.github.io%2Fmain%2F&integration_type=0&scope=identify+guilds+connections+guilds.members.read+email+guilds.join+gdm.join+guilds.channels.read+activities.invites.write+activities.read+applications.commands+bot";
     } else {
       const avatarUrl = user.avatar
         ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
