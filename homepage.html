@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PFNexus</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0f172a;
+      color: white;
+      overflow: hidden;
+    }
+
+    /* Loading screen */
+    #loading-screen {
+      position: fixed;
+      width: 100vw;
+      height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      animation: fadeOut 1s ease-out 2.5s forwards;
+    }
+
+    .loader {
+      border: 6px solid #1e293b;
+      border-top: 6px solid #38bdf8;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeOut {
+      to { opacity: 0; visibility: hidden; }
+    }
+
+    /* Main content */
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      padding: 20px;
+      animation: fadeIn 1s ease-out 2.6s forwards;
+      opacity: 0;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      animation: slideDown 1s ease-out;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-50px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    p {
+      font-size: 1.1rem;
+      color: #94a3b8;
+      margin-bottom: 30px;
+      animation: fadeIn 2s ease-out 1s;
+    }
+
+    .discord-btn {
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #5865F2, #404EED);
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: transform 0.3s ease, box-shadow 0.3s;
+      animation: zoomIn 0.7s ease-out 1.5s forwards;
+      opacity: 0;
+    }
+
+    .discord-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 15px #5865F2;
+    }
+
+    @keyframes zoomIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    footer {
+      position: absolute;
+      bottom: 15px;
+      font-size: 0.9rem;
+      color: #64748b;
+      animation: fadeIn 1.5s ease-in 3s forwards;
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading screen -->
+  <div id="loading-screen">
+    <div class="loader"></div>
+  </div>
+
+  <!-- Main content -->
+  <div class="container">
+    <h1>Welcome to <span style="color:#38bdf8;">PFNexus</span></h1>
+    <p>The ultimate hub to manage your Discord servers with power & style.</p>
+    <div class="user-actions"></div>
+    <footer>&copy; 2025 PFNexus. All rights reserved.</footer>
+  </div>
+
+  <script>
+    const CLIENT_ID = "1385353384147685567";
+    const REDIRECT_URI = "https://oneworldvirtual.github.io/main/";
+    const AUTH_URL = `https://discord.com/oauth2/authorize?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=identify`;
+
+    const userActionsDiv = document.querySelector(".user-actions");
+
+    function showUser(user) {
+      const avatarUrl = user.avatar
+        ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
+        : 'https://discord.com/assets/f135b1fcd3d2c4935480d19e910540d5.png';
+
+      userActionsDiv.innerHTML = `
+        <img src="${avatarUrl}" alt="Avatar" style="width: 60px; height: 60px; border-radius: 50%; margin-bottom: 10px;">
+        <div style="margin-bottom: 10px;">${user.username}#${user.discriminator}</div>
+        <a class="discord-btn" href="dashboard.html">Go to Dashboard</a>
+        <br><br>
+        <button class="discord-btn" style="background:#ef4444; margin-top:10px;" onclick="logout()">Logout</button>
+      `;
+    }
+
+    function showLoginButton() {
+      userActionsDiv.innerHTML = `
+        <a href="${AUTH_URL}" class="discord-btn">Getting Started</a>
+      `;
+    }
+
+    function logout() {
+      localStorage.removeItem("discordUser");
+      window.location.href = REDIRECT_URI;
+    }
+
+    // OAuth logic
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    const token = params.get("access_token");
+
+    const savedUser = JSON.parse(localStorage.getItem("discordUser"));
+
+    if (token) {
+      window.history.replaceState({}, document.title, REDIRECT_URI);
+      fetch("https://discord.com/api/users/@me", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(user => {
+        localStorage.setItem("discordUser", JSON.stringify(user));
+        showUser(user);
+      })
+      .catch(() => {
+        localStorage.removeItem("discordUser");
+        showLoginButton();
+      });
+    } else if (savedUser) {
+      showUser(savedUser);
+    } else {
+      showLoginButton();
+    }
+  </script>
+
+</body>
+</html>
