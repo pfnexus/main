@@ -237,7 +237,7 @@
     function logout() {
       localStorage.removeItem("discordUser");
       localStorage.removeItem("discordAccessToken"); // Clear access token too
-      window.location.href = REDIRECT_URI; // Redirect to clear hash
+      window.location.href = 'index.html'; // Redirect to clear hash and go to clean login page
     }
 
     // Main OAuth logic
@@ -300,4 +300,5 @@
 
 </body>
 </html>
+
 
