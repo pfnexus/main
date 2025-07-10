@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>PFNexus Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Tailwind CSS CDN -->
+  <!-- Tailwind CSS CDN - For true production, consider a build process to purge unused CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts - Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -13,8 +13,16 @@
       font-family: 'Inter', sans-serif;
     }
   </style>
-  <!-- Babel for JSX Transpilation -->
-  <!-- IMPORTANT: For production, consider a build process (e.g., Webpack/Vite) instead of client-side Babel for performance. -->
+  <!-- React and ReactDOM UMD Production Builds - Loaded globally -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Firebase UMD Compatibility Builds - Loaded globally -->
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+
+  <!-- Babel for JSX Transpilation - For true production, consider a build process instead of client-side Babel for performance. -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex flex-col">
@@ -27,14 +35,16 @@
 
   <!-- Change script type to "text/babel" for JSX transpilation -->
   <script type="text/babel">
-    // Import React and ReactDOM from esm.sh for browser compatibility
-    import React, { useState, useEffect, createContext, useContext } from 'https://esm.sh/react@18.2.0';
-    import ReactDOM from 'https://esm.sh/react-dom@18.2.0';
+    // React, ReactDOM, and Firebase are now available globally via the UMD scripts loaded above.
+    // No need for top-level 'import' statements for these libraries within this script block.
+    const { useState, useEffect, createContext, useContext } = React;
+    const { createRoot, createPortal } = ReactDOM; // Use createRoot for React 18, and createPortal for modals
 
-    // Import Firebase modules from CDN
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-    import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-    import { getFirestore, doc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+    // Firebase modules are available globally via 'firebase' namespace
+    const { initializeApp } = firebase.app;
+    const { getAuth, signInAnonymously, onAuthStateChanged } = firebase.auth;
+    const { getFirestore, doc, setDoc, onSnapshot } = firebase.firestore;
+
 
     // PermissionsBitField for checking Discord guild permissions
     // This is a simplified version for client-side checking.
@@ -169,7 +179,9 @@
 
     // --- Modal Component ---
     const Modal = ({ children, onClose, title }) => {
-      return ReactDOM.createPortal(
+      // Use createPortal to render the modal outside the main React DOM tree,
+      // typically directly under document.body, while still being managed by React.
+      return createPortal(
         <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6 relative">
             <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{title}</h3>
@@ -182,7 +194,7 @@
             {children}
           </div>
         </div>,
-        document.body
+        document.body // This is the DOM node where the modal content will be rendered
       );
     };
 
@@ -721,7 +733,7 @@
     };
 
     // Render the App wrapped with AuthProvider
-    ReactDOM.createRoot(document.getElementById('root')).render(
+    createRoot(document.getElementById('root')).render(
       <React.StrictMode>
         <AuthProvider>
           <App />
