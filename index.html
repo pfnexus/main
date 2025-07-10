@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PFNexus</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="pfnexus.png">
+  <style>
+    /* Tailwind CSS CDN for basic styling */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a; /* slate-900 */
+      color: white;
+      overflow: hidden;
+    }
+
+    /* Loading screen */
+    #loading-screen {
+      position: fixed;
+      width: 100vw;
+      height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      animation: fadeOut 1s ease-out 2.5s forwards;
+    }
+
+    .loader {
+      border: 6px solid #1e293b; /* slate-800 */
+      border-top: 6px solid #38bdf8; /* sky-500 */
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeOut {
+      to { opacity: 0; visibility: hidden; }
+    }
+
+    /* Main content */
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh; /* Use min-height for better content fitting */
+      text-align: center;
+      padding: 20px;
+      animation: fadeIn 1s ease-out 2.6s forwards;
+      opacity: 0;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      animation: slideDown 1s ease-out;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-50px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    p {
+      font-size: 1.1rem;
+      color: #94a3b8; /* slate-400 */
+      margin-bottom: 30px;
+      animation: fadeIn 2s ease-out 1s;
+    }
+
+    .discord-btn {
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #5865F2, #404EED); /* Discord brand colors */
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: transform 0.3s ease, box-shadow 0.3s;
+      animation: zoomIn 0.7s ease-out 1.5s forwards;
+      opacity: 0;
+      display: inline-flex; /* Use flex for icon alignment */
+      align-items: center;
+      gap: 10px; /* Space between icon and text */
+    }
+
+    .discord-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 15px #5865F2;
+    }
+
+    @keyframes zoomIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    footer {
+      position: absolute;
+      bottom: 15px;
+      font-size: 0.9rem;
+      color: #64748b; /* slate-500 */
+      animation: fadeIn 1.5s ease-in 3s forwards;
+      opacity: 0;
+    }
+
+    /* Styles for logged-in user display */
+    .user-profile-summary {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .user-profile-summary img {
+      border: 3px solid #38bdf8; /* sky-500 */
+    }
+
+    .user-profile-summary .username-text {
+      font-size: 1.25rem; /* text-xl */
+      font-weight: 600; /* font-semibold */
+      color: #e2e8f0; /* slate-200 */
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .action-buttons .btn-dashboard {
+      background-color: #38bdf8; /* sky-500 */
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      text-decoration: none;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    .action-buttons .btn-dashboard:hover {
+      background-color: #0ea5e9; /* sky-600 */
+      transform: scale(1.05);
+    }
+
+    .action-buttons .btn-logout {
+      background-color: #ef4444; /* red-500 */
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    .action-buttons .btn-logout:hover {
+      background-color: #dc2626; /* red-600 */
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading screen -->
+  <div id="loading-screen">
+    <div class="loader"></div>
+  </div>
+
+  <!-- Main content -->
+  <div class="container">
+
+    <h1>Welcome to <span style="color:#38bdf8;">PFNexus</span></h1>
+    <p>The ultimate hub to manage your Discord servers with power & style.</p>
+    <div class="user-actions"></div>
+    <footer>&copy; 2025 PFNexus. All rights reserved.</footer>
+  </div>
+
+  <script>
+    // Replace with your Discord Bot's actual Client ID
+    const CLIENT_ID = "YOUR_DISCORD_BOT_CLIENT_ID";
+    // IMPORTANT: This REDIRECT_URI MUST be configured in your Discord Developer Portal
+    // OAuth2 -> General -> Redirects. It should point to your hosted dashboard.html.
+    const REDIRECT_URI = "YOUR_HOSTED_DASHBOARD_URL/dashboard.html"; // e.g., "https://your-domain.com/dashboard.html"
+
+    // Scopes for Discord OAuth:
+    // identify: To get user's basic profile (username, avatar).
+    // guilds: To get a list of guilds the user is in.
+    const AUTH_URL = `https://discord.com/oauth2/authorize?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=identify%20guilds`;
+
+    const userActionsDiv = document.querySelector(".user-actions");
+
+    // Function to display user info and dashboard/logout buttons
+    function showUser(user) {
+      const avatarUrl = user.avatar
+        ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128` // Request larger avatar
+        : 'https://discord.com/assets/f135b1fcd3d2c4935480d19e910540d5.png'; // Default Discord avatar
+
+      userActionsDiv.innerHTML = `
+        <div class="user-profile-summary">
+          <img src="${avatarUrl}" alt="Avatar" class="w-24 h-24 rounded-full shadow-lg">
+          <span class="username-text">${user.username}#${user.discriminator || '0000'}</span>
+        </div>
+        <div class="action-buttons">
+          <a class="btn-dashboard" href="dashboard.html">Go to Dashboard</a>
+          <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+      `;
+    }
+
+    // Function to display the login button
+    function showLoginButton() {
+      userActionsDiv.innerHTML = `
+        <a href="${AUTH_URL}" class="discord-btn">
+          <svg aria-hidden="true" role="img" viewBox="0 0 640 512" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor">
+            <path d="M524.531 6.377c-43.63-6.2-104.862-2.316-150.5 16.948-28.784 12.013-46.291 27.56-56.782 42.66-.027.038-.053.077-.08.116-.013.018-.027.037-.04.055-.03.042-.058.084-.088.125-.013.018-.027.037-.04.055-10.491 15.1-27.998 30.647-56.782 42.66C159.33 4.061 98.098 0 54.469 6.377c-33.723 4.8-60.034 14.5-78.483 29.176-15.602 12.18-28.723 28.544-37.425 47.003C-4.497 122.043-.687 157.023 10.658 195.632c2.08 7.447 4.29 15.041 6.643 22.802 1.322 4.39 2.684 8.874 4.103 13.435 1.18 3.754 2.378 7.527 3.61 11.313 1.257 3.864 2.532 7.747 3.844 11.648 3.015 9.173 6.082 18.394 9.207 27.646 1.343 3.932 2.697 7.878 4.067 11.838 7.029 20.354 14.331 41.054 21.926 61.947 1.378 3.719 2.766 7.464 4.168 11.233 7.643 20.256 15.54 40.852 23.633 61.542 1.378 3.535 2.766 7.086 4.168 10.669 8.093 20.087 16.498 40.063 25.093 59.852 1.345 3.097 2.71 6.182 4.103 9.259 9.02 19.467 18.352 38.835 27.97 58.027 1.22 2.404 2.457 4.801 3.71 7.185 10.012 18.924 20.394 37.75 31.11 56.425 1.18 2.046 2.384 4.088 3.61 6.12 11.04 18.912 22.4 37.52 34.093 55.833.037.057.073.115.11.172 12.013 18.912 24.537 37.52 37.425 55.833 1.22 2.046 2.457 4.088 3.71 6.12 10.012 18.924 20.394 37.75 31.11 56.425 1.18 2.404 2.378 4.801 3.61 7.185 9.02 19.467 18.352 38.835 27.97 58.027 1.343 3.097 2.71 6.182 4.103 9.259 8.093 20.087 16.498 40.063 25.093 59.852 1.378 3.535 2.766 7.086 4.168 10.669 7.643 20.256 15.54 40.852 23.633 61.542 1.378 3.719 2.766 7.464 4.168 11.233 7.029 20.354 14.331 41.054 21.926 61.947 1.257 3.864 2.532 7.747 3.844 11.648 1.18 3.754 2.378 7.527 3.61 11.313 1.322 4.39 2.684 8.874 4.103 13.435 2.08 7.447 4.29 15.041 6.643 22.802 11.345 38.609 15.155 73.589 10.658 195.632-4.497 122.043-.687 157.023 10.658 195.632z"></path>
+          </svg>
+          <span>Getting Started</span>
+        </a>
+      `;
+    }
+
+    // Function to handle logout
+    function logout() {
+      localStorage.removeItem("discordUser");
+      localStorage.removeItem("discordAccessToken"); // Clear access token too
+      window.location.href = REDIRECT_URI; // Redirect to clear hash
+    }
+
+    // Main OAuth logic
+    document.addEventListener('DOMContentLoaded', () => {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const token = params.get("access_token");
+      const savedUser = JSON.parse(localStorage.getItem("discordUser"));
+
+      if (token) {
+        // Clear hash from URL to prevent re-processing on refresh
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+
+        // Store the token for dashboard access
+        localStorage.setItem("discordAccessToken", token);
+
+        // Fetch user info using the access token
+        fetch("https://discord.com/api/users/@me", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(res => {
+          if (!res.ok) {
+            // If token is invalid or expired, clear and show login
+            throw new Error(`Failed to fetch user data: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then(user => {
+          localStorage.setItem("discordUser", JSON.stringify(user));
+          showUser(user);
+          // Redirect to dashboard after successful login and user data retrieval
+          window.location.href = `dashboard.html`;
+        })
+        .catch((error) => {
+          console.error("Error fetching Discord user data:", error);
+          localStorage.removeItem("discordUser");
+          localStorage.removeItem("discordAccessToken");
+          showLoginButton();
+        });
+      } else if (savedUser && localStorage.getItem("discordAccessToken")) {
+        // If user and token are already in local storage, show user info directly
+        showUser(savedUser);
+        // Automatically redirect to dashboard if already logged in
+        window.location.href = `dashboard.html`;
+      } else {
+        // No token in URL, no user in local storage, show login button
+        showLoginButton();
+      }
+
+      // Hide loading screen after content is ready
+      const loadingScreen = document.getElementById('loading-screen');
+      if (loadingScreen) {
+        loadingScreen.style.animation = 'fadeOut 0.5s ease-out forwards';
+        setTimeout(() => {
+          loadingScreen.style.display = 'none';
+        }, 500); // Match animation duration
+      }
+    });
+  </script>
+
+</body>
+</html>
