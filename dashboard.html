@@ -41,18 +41,18 @@
     // Full permissions list: https://discord.com/developers/docs/topics/permissions#permissions-bitwise-flags
     class PermissionsBitField {
       constructor(bits) {
-        this.bits = BigInt(bits); // Use BigInt for large permission numbers
+        this.bits = Number(bits); // Changed from BigInt to Number
       }
 
       has(permission) {
-        return (this.bits & BigInt(permission)) === BigInt(permission);
+        return (this.bits & Number(permission)) === Number(permission); // Changed from BigInt to Number
       }
 
       static Flags = {
-        ADMINISTRATOR: 1n << 3n, // (1 << 3)
-        MANAGE_GUILD: 1n << 5n,  // (1 << 5)
+        ADMINISTRATOR: 1 << 3, // Changed from 1n << 3n
+        MANAGE_GUILD: 1 << 5,  // Changed from 1n << 5n
         // Add other relevant permissions if needed for display/logic
-        // E.g., SEND_MESSAGES: 1n << 11n, VIEW_CHANNEL: 1n << 10n
+        // E.g., SEND_MESSAGES: 1 << 11, VIEW_CHANNEL: 1 << 10
       };
     }
 
