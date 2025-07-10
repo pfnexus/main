@@ -22,6 +22,7 @@
     </div>
   </div>
 
+  <!-- Change script type to "module" for native ES module support -->
   <script type="module">
     // Import React and ReactDOM from esm.sh for browser compatibility
     import React, { useState, useEffect, createContext, useContext } from 'https://esm.sh/react@18.2.0';
@@ -53,8 +54,21 @@
     }
 
     // --- Firebase Configuration ---
-    // The firebaseConfig is now dynamically loaded from the Canvas environment
-    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+    // If running in the Canvas environment, __firebase_config will be provided.
+    // If running on your main website outside of Canvas, you MUST replace the placeholder
+    // values below with your actual Firebase project configuration details.
+    const firebaseConfig = typeof __firebase_config !== 'undefined'
+      ? JSON.parse(__firebase_config)
+      : {
+          apiKey: "YOUR_FIREBASE_API_KEY",
+          authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
+          projectId: "YOUR_FIREBASE_PROJECT_ID",
+          storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
+          messagingSenderId: "YOUR_FIREBASE_MESSAGING_SENDER_ID",
+          appId: "YOUR_FIREBASE_APP_ID",
+          // measurementId: "YOUR_FIREBASE_MEASUREMENT_ID" // Optional
+        };
+    console.log("Firebase Config Loaded:", firebaseConfig);
 
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
@@ -72,20 +86,28 @@
       const [authReady, setAuthReady] = useState(false); // Indicates Firebase auth is ready
 
       useEffect(() => {
+        console.log("AuthProvider useEffect: Initializing auth state listener.");
         // Read Discord token and user from localStorage immediately
         const storedToken = localStorage.getItem('discordAccessToken');
         const storedUser = localStorage.getItem('discordUser');
 
         if (storedToken) {
           setDiscordAccessToken(storedToken);
+          console.log("AuthProvider: Found Discord Access Token in localStorage.");
+        } else {
+          console.log("AuthProvider: No Discord Access Token found in localStorage.");
         }
         if (storedUser) {
           try {
-            setUser(JSON.parse(storedUser));
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            console.log("AuthProvider: Found Discord User in localStorage:", parsedUser.username);
           } catch (e) {
-            console.error("Error parsing stored Discord user:", e);
+            console.error("AuthProvider: Error parsing stored Discord user:", e);
             localStorage.removeItem('discordUser');
           }
+        } else {
+          console.log("AuthProvider: No Discord User found in localStorage.");
         }
 
         // Firebase Auth State Listener
@@ -93,6 +115,8 @@
           setFirebaseUser(currentUser);
           setAuthReady(true); // Firebase auth is initialized and state is known
           setLoading(false); // Initial loading complete
+          console.log("AuthProvider: Firebase Auth State Changed. Current Firebase User:", currentUser ? currentUser.uid : "None");
+          console.log("AuthProvider: authReady set to true, loading set to false.");
         });
 
         // Cleanup subscription
@@ -101,9 +125,13 @@
 
       // If no Firebase user is logged in, sign in anonymously to allow Firestore access
       useEffect(() => {
+        console.log(`AuthProvider useEffect (anonymous sign-in check): authReady=${authReady}, firebaseUser=${firebaseUser ? firebaseUser.uid : 'null'}, loading=${loading}`);
         if (authReady && !firebaseUser && !loading) {
-          signInAnonymously(auth).catch(error => {
-            console.error("Error signing in anonymously to Firebase:", error);
+          console.log("AuthProvider useEffect: Attempting anonymous Firebase sign-in.");
+          signInAnonymously(auth).then(() => {
+            console.log("AuthProvider: Signed in anonymously to Firebase.");
+          }).catch(error => {
+            console.error("AuthProvider: Error signing in anonymously to Firebase:", error);
             // Handle anonymous sign-in failure, maybe show an error to the user
           });
         }
@@ -111,17 +139,20 @@
 
       // Function to handle logout
       const logout = () => {
+        console.log("Logging out...");
         localStorage.removeItem("discordUser");
         localStorage.removeItem("discordAccessToken");
         // Sign out from Firebase if authenticated, then redirect
         if (firebaseUser) {
           auth.signOut().then(() => {
+            console.log("Firebase user signed out. Redirecting to index.html.");
             window.location.href = 'index.html'; // Redirect to login page
           }).catch(error => {
             console.error("Error signing out from Firebase:", error);
             window.location.href = 'index.html'; // Still redirect even if Firebase signOut fails
           });
         } else {
+          console.log("No Firebase user to sign out. Redirecting to index.html.");
           window.location.href = 'index.html'; // Just redirect if no Firebase user
         }
       };
@@ -208,6 +239,7 @@
 
       // Effect to fetch user's guilds from Discord API
       useEffect(() => {
+        console.log("App useEffect: Fetching user guilds. User:", user ? user.username : "None", "AccessToken:", discordAccessToken ? "Present" : "Missing", "AuthReady:", authReady);
         const fetchUserGuilds = async () => {
           // Ensure Discord user and access token are available and auth is ready
           if (user && discordAccessToken && authReady) {
@@ -250,14 +282,16 @@
               });
 
               setGuilds(filteredGuilds);
+              console.log("App useEffect: Successfully fetched and filtered guilds.");
 
             } catch (err) {
-              console.error("Error fetching guilds:", err);
+              console.error("App useEffect: Error fetching guilds:", err);
               setError(`Error fetching servers: ${err.message}. Please ensure the bot is in the server and you have Administrator or Manage Server permissions.`);
               setModalMessage(`Error fetching servers: ${err.message}. Please ensure the bot is in the server and you have Administrator or Manage Server permissions.`);
               setShowErrorModal(true);
             }
           } else {
+            console.log("App useEffect: Skipping guild fetch. User, AccessToken, or AuthReady not yet available.");
             setGuilds([]);
           }
         };
@@ -269,7 +303,11 @@
 
       // Effect to fetch guild config from Firestore when a guild is selected
       useEffect(() => {
-        if (!firebaseUser || !authReady) return; // Ensure Firebase auth is ready
+        console.log(`App useEffect (Firestore config): firebaseUser=${firebaseUser ? firebaseUser.uid : 'null'}, authReady=${authReady}, selectedGuild=${selectedGuild ? selectedGuild.name : 'null'}`);
+        if (!firebaseUser || !authReady) {
+          console.log("App useEffect (Firestore config): Firebase user not ready or auth not ready. Skipping.");
+          return; // Ensure Firebase auth is ready
+        }
 
         if (selectedGuild) {
           setConfigLoading(true);
@@ -284,10 +322,10 @@
               const configData = docSnap.data();
               setGuildConfig(configData);
               populateFormStates(configData);
-              console.log("Fetched guild config:", configData);
+              console.log("App useEffect (Firestore onSnapshot): Fetched guild config:", configData);
             } else {
               // If no config exists, create a default one
-              console.log("No config found for this guild, creating default.");
+              console.log("App useEffect (Firestore onSnapshot): No config found for this guild, creating default.");
               const defaultConfig = {
                 welcomeMessage: `Welcome to ${selectedGuild.name}, {user}!`,
                 welcomeChannelId: '',
@@ -307,7 +345,7 @@
                 populateFormStates(defaultConfig);
                 console.log("Default config created.");
               } catch (err) {
-                console.error("Error creating default config:", err);
+                console.error("App useEffect (Firestore onSnapshot): Error creating default config:", err);
                 setError(`Error creating default config: ${err.message}`);
                 setModalMessage(`Error creating default config: ${err.message}`);
                 setShowErrorModal(true);
@@ -315,7 +353,7 @@
             }
             setConfigLoading(false);
           }, (err) => {
-            console.error("Error listening to guild config:", err);
+            console.error("App useEffect (Firestore onSnapshot): Error listening to guild config:", err);
             setError(`Error fetching guild config: ${err.message}`);
             setModalMessage(`Error fetching guild config: ${err.message}`);
             setShowErrorModal(true);
@@ -324,6 +362,7 @@
 
           return () => unsubscribe(); // Cleanup Firestore listener
         } else {
+          console.log("App useEffect (Firestore config): No guild selected. Clearing config.");
           setGuildConfig(null);
           resetFormStates();
         }
@@ -366,6 +405,7 @@
           await setDoc(doc(db, 'serverConfigs', selectedGuild.id), updatedConfig, { merge: true });
           setModalMessage('Configuration saved successfully!');
           setShowErrorModal(true); // Reusing error modal for success message
+          console.log("Configuration saved successfully for guild:", selectedGuild.name);
         } catch (err) {
           console.error("Error saving config:", err);
           setError(`Error saving configuration: ${err.message}`);
@@ -377,6 +417,7 @@
       };
 
       // Handle initial loading states
+      console.log(`Dashboard Render: loading=${loading}, authReady=${authReady}, user=${user ? user.username : 'null'}, discordAccessToken=${discordAccessToken ? 'present' : 'null'}`);
       if (loading || !authReady) {
         return (
           <div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">
@@ -388,6 +429,7 @@
       // If Discord user or token is missing after initial load, redirect to index.html
       // This handles cases where localStorage might have been cleared or token expired.
       if (!user || !discordAccessToken) {
+        console.log("Dashboard Render: User or Discord Access Token missing after load. Redirecting to index.html.");
         // Use a small delay to allow React to finish its render cycle before redirecting
         setTimeout(() => {
           window.location.href = 'index.html';
