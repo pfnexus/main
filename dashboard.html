@@ -102,41 +102,7 @@
 </head>
 <body>
 
-  <h1>🎮 PFNexus Dashboard</h1>
+  <h1>Not availble, Thanks for your patience !</h1>
   <div id="profile" class="profile-card"></div>
 
   <footer>&copy; 2025 PFNexus. All rights reserved.</footer>
-
-  <script>
-    const user = JSON.parse(localStorage.getItem("discordUser"));
-    const profileDiv = document.getElementById("profile");
-
-    if (!user) {
-      // Not logged in, redirect to login page
-      window.location.href = "";
-    } else {
-      const avatarUrl = user.avatar
-        ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
-        : 'https://discord.com/assets/f135b1fcd3d2c4935480d19e910540d5.png';
-
-      profileDiv.innerHTML = `
-        <img class="avatar" src="${avatarUrl}" alt="User Avatar">
-        <div class="username">${user.username}#${user.discriminator}</div>
-        <div class="info"><strong>ID:</strong> ${user.id}</div>
-        <div class="info"><strong>Locale:</strong> ${user.locale || 'unknown'}</div>
-        <div class="info"><strong>MFA:</strong> ${user.mfa_enabled ? "Enabled" : "Disabled"}</div>
-        <div>
-          <a href="index.html" class="btn btn-back">⬅ Back</a>
-          <button class="btn btn-logout" onclick="logout()">Logout</button>
-        </div>
-      `;
-    }
-
-    function logout() {
-      localStorage.removeItem("discordUser");
-      window.location.href = "index.html";
-    }
-  </script>
-
-</body>
-</html>
