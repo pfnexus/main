@@ -13,6 +13,9 @@
       font-family: 'Inter', sans-serif;
     }
   </style>
+  <!-- Babel for JSX Transpilation -->
+  <!-- IMPORTANT: For production, consider a build process (e.g., Webpack/Vite) instead of client-side Babel for performance. -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex flex-col">
   <div id="root" class="flex-grow">
@@ -22,8 +25,8 @@
     </div>
   </div>
 
-  <!-- Change script type to "module" for native ES module support -->
-  <script type="module">
+  <!-- Change script type to "text/babel" for JSX transpilation -->
+  <script type="text/babel">
     // Import React and ReactDOM from esm.sh for browser compatibility
     import React, { useState, useEffect, createContext, useContext } from 'https://esm.sh/react@18.2.0';
     import ReactDOM from 'https://esm.sh/react-dom@18.2.0';
