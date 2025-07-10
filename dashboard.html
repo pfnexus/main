@@ -4,105 +4,713 @@
   <meta charset="UTF-8">
   <title>PFNexus Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts - Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #0f172a;
-      color: white;
-      overflow-x: hidden;
-      animation: fadeIn 1s ease-out;
-      text-align: center;
-      padding: 40px 20px;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 20px;
-    }
-
-    .profile-card {
-      background-color: #1e293b;
-      padding: 30px;
-      border-radius: 20px;
-      max-width: 400px;
-      margin: 0 auto;
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
-      animation: slideIn 1s ease-out;
-    }
-
-    @keyframes slideIn {
-      from { transform: scale(0.9); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-
-    .avatar {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      margin-bottom: 15px;
-      box-shadow: 0 0 10px #38bdf8;
-    }
-
-    .username {
-      font-size: 1.5rem;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    .info {
-      font-size: 0.9rem;
-      color: #cbd5e1;
-      margin-bottom: 5px;
-    }
-
-    .btn {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: bold;
-      font-size: 1rem;
-      text-decoration: none;
-      transition: background 0.3s, transform 0.2s;
-      cursor: pointer;
-    }
-
-    .btn-logout {
-      background-color: #ef4444;
-      color: white;
-    }
-    .btn-logout:hover {
-      background-color: #dc2626;
-      transform: scale(1.05);
-    }
-
-    .btn-back {
-      background: #38bdf8;
-      color: white;
-      margin-right: 10px;
-    }
-
-    .btn-back:hover {
-      background: #0ea5e9;
-      transform: scale(1.05);
-    }
-
-    footer {
-      margin-top: 50px;
-      color: #64748b;
-      font-size: 0.85rem;
+      font-family: 'Inter', sans-serif;
     }
   </style>
 </head>
-<body>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col">
+  <div id="root" class="flex-grow"></div>
 
-  <h1>Not available, Thanks for your patience !</h1>
-  <div id="profile" class="profile-card"></div>
+  <script type="module">
+    import React, { useState, useEffect, createContext, useContext } from 'https://esm.sh/react@18.2.0';
+    import ReactDOM from 'https://esm.sh/react-dom@18.2.0';
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+    import { getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
-  <footer>&copy; 2025 PFNexus. All rights reserved.</footer>
+    // PermissionsBitField for checking Discord guild permissions
+    // This is a simplified version for client-side checking.
+    // Full permissions list: https://discord.com/developers/docs/topics/permissions#permissions-bitwise-flags
+    class PermissionsBitField {
+      constructor(bits) {
+        this.bits = BigInt(bits); // Use BigInt for large permission numbers
+      }
+
+      has(permission) {
+        return (this.bits & BigInt(permission)) === BigInt(permission);
+      }
+
+      static Flags = {
+        ADMINISTRATOR: 1n << 3n, // (1 << 3)
+        MANAGE_GUILD: 1n << 5n,  // (1 << 5)
+        SEND_MESSAGES: 1n << 11n,
+        EMBED_LINKS: 1n << 14n,
+        ATTACH_FILES: 1n << 15n,
+        MANAGE_CHANNELS: 1n << 4n,
+        MANAGE_ROLES: 1n << 28n,
+        VIEW_CHANNEL: 1n << 10n,
+        READ_MESSAGE_HISTORY: 1n << 12n,
+        MODERATE_MEMBERS: 1n << 40n,
+        KICK_MEMBERS: 1n << 1n,
+        BAN_MEMBERS: 1n << 2n,
+        MANAGE_MESSAGES: 1n << 13n,
+      };
+    }
+
+    // --- Firebase Configuration ---
+    // IMPORTANT: Replace with your actual Firebase project configuration
+    // You can find this in your Firebase Console -> Project settings -> General
+    const firebaseConfig = {
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
+      projectId: "YOUR_FIREBASE_PROJECT_ID",
+      storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_FIREBASE_MESSAGING_SENDER_ID",
+      appId: "YOUR_FIREBASE_APP_ID",
+      // measurementId: "YOUR_FIREBASE_MEASUREMENT_ID" // Optional
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // --- Context for User Data and Firebase Auth State ---
+    const AuthContext = createContext(null);
+
+    const AuthProvider = ({ children }) => {
+      const [user, setUser] = useState(null); // Discord user data
+      const [firebaseUser, setFirebaseUser] = useState(null); // Firebase user data
+      const [discordAccessToken, setDiscordAccessToken] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [authReady, setAuthReady] = useState(false); // Indicates Firebase auth is ready
+
+      useEffect(() => {
+        // Try to get Discord token from localStorage
+        const storedToken = localStorage.getItem('discordAccessToken');
+        if (storedToken) {
+          setDiscordAccessToken(storedToken);
+        }
+
+        // Firebase Auth State Listener
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+          setFirebaseUser(currentUser);
+          setAuthReady(true); // Firebase auth is initialized and state is known
+          setLoading(false); // Initial loading complete
+        });
+
+        // Cleanup subscription
+        return () => unsubscribe();
+      }, []);
+
+      useEffect(() => {
+        // If Firebase Auth is ready and we have a Discord token, fetch Discord user data
+        if (authReady && discordAccessToken && !user) {
+          fetch('https://discord.com/api/users/@me', {
+            headers: {
+              Authorization: `Bearer ${discordAccessToken}`,
+            },
+          })
+          .then(res => res.json())
+          .then(discordUserData => {
+            if (discordUserData.id) {
+              setUser(discordUserData);
+            } else {
+              // Token might be invalid or expired
+              console.error("Failed to fetch Discord user data, token might be invalid.");
+              logout(); // Force logout if token is bad
+            }
+          })
+          .catch(error => {
+            console.error("Error fetching Discord user data:", error);
+            logout(); // Force logout on error
+          });
+        }
+      }, [authReady, discordAccessToken, user]); // Depend on authReady and token
+
+      // Function to handle logout
+      const logout = () => {
+        localStorage.removeItem("discordUser");
+        localStorage.removeItem("discordAccessToken");
+        auth.signOut().then(() => {
+          window.location.href = 'index.html'; // Redirect to login page
+        }).catch(error => {
+          console.error("Error signing out from Firebase:", error);
+          window.location.href = 'index.html'; // Still redirect even if Firebase signOut fails
+        });
+      };
+
+      // If no Firebase user is logged in, sign in anonymously to allow Firestore access
+      // This is crucial for the free tier and simple setups where you don't need user-specific Firebase Auth
+      useEffect(() => {
+        if (authReady && !firebaseUser && !loading) {
+          signInAnonymously(auth).catch(error => {
+            console.error("Error signing in anonymously:", error);
+            // Handle anonymous sign-in failure, maybe show an error to the user
+          });
+        }
+      }, [authReady, firebaseUser, loading]);
+
+
+      return (
+        <AuthContext.Provider value={{ user, firebaseUser, discordAccessToken, loading, authReady, logout }}>
+          {children}
+        </AuthContext.Provider>
+      );
+    };
+
+    // --- Modal Component ---
+    const Modal = ({ children, onClose, title }) => {
+      return ReactDOM.createPortal(
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6 relative">
+            <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{title}</h3>
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            {children}
+          </div>
+        </div>,
+        document.body
+      );
+    };
+
+    // --- Main Dashboard Component ---
+    const App = () => {
+      const { user, firebaseUser, discordAccessToken, loading, authReady, logout } = useContext(AuthContext);
+      const [guilds, setGuilds] = useState([]);
+      const [selectedGuild, setSelectedGuild] = useState(null);
+      const [guildConfig, setGuildConfig] = useState(null);
+      const [configLoading, setConfigLoading] = useState(false);
+      const [error, setError] = useState(null);
+      const [showErrorModal, setShowErrorModal] = useState(false);
+      const [modalMessage, setModalMessage] = useState('');
+
+      // States for form fields, mirroring the /setup command
+      const [welcomeMessage, setWelcomeMessage] = useState('');
+      const [welcomeChannelId, setWelcomeChannelId] = useState('');
+      const [enableWelcome, setEnableWelcome] = useState(false);
+      const [logChannelId, setLogChannelId] = useState('');
+      const [modRoleId, setModRoleId] = useState('');
+      const [ticketPingRoleId, setTicketPingRoleId] = useState('');
+      const [managementRoleId, setManagementRoleId] = useState('');
+      const [gameIssueRoleId, setGameIssueRoleId] = useState('');
+      const [modmailCategoryId, setModmailCategoryId] = useState('');
+      const [rolesMustLog, setRolesMustLog] = useState(''); // Comma-separated string of IDs
+      const [rolesNoLog, setRolesNoLog] = useState('');     // Comma-separated string of IDs
+
+      const [guildChannels, setGuildChannels] = useState([]); // For dropdowns
+      const [guildRoles, setGuildRoles] = useState([]);       // For dropdowns
+
+      // Reset form states when a new guild is selected or config is cleared
+      const resetFormStates = () => {
+        setWelcomeMessage('');
+        setWelcomeChannelId('');
+        setEnableWelcome(false);
+        setLogChannelId('');
+        setModRoleId('');
+        setTicketPingRoleId('');
+        setManagementRoleId('');
+        setGameIssueRoleId('');
+        setModmailCategoryId('');
+        setRolesMustLog('');
+        setRolesNoLog('');
+        setGuildChannels([]);
+        setGuildRoles([]);
+      };
+
+      // Populate form states from fetched config data
+      const populateFormStates = (config) => {
+        setWelcomeMessage(config.welcomeMessage || '');
+        setWelcomeChannelId(config.welcomeChannelId || '');
+        setEnableWelcome(config.enableWelcome || false);
+        setLogChannelId(config.logChannelId || '');
+        setModRoleId(config.modRoleId || '');
+        setTicketPingRoleId(config.ticketPingRoleId || '');
+        setManagementRoleId(config.managementRoleId || '');
+        setGameIssueRoleId(config.gameIssueRoleId || '');
+        setModmailCategoryId(config.modmailCategoryId || '');
+        setRolesMustLog(Array.isArray(config.rolesMustLogIds) ? config.rolesMustLogIds.join(',') : '');
+        setRolesNoLog(Array.isArray(config.rolesNoLogIds) ? config.rolesNoLogIds.join(',') : '');
+      };
+
+      // Effect to fetch user's guilds from Discord API
+      useEffect(() => {
+        const fetchUserGuilds = async () => {
+          if (user && discordAccessToken) {
+            setError(null);
+            try {
+              const response = await fetch('https://discord.com/api/users/@me/guilds', {
+                headers: {
+                  Authorization: `Bearer ${discordAccessToken}`,
+                },
+              });
+
+              if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Failed to fetch guilds: ${response.status} - ${errorData.message}`);
+              }
+
+              const userGuilds = await response.json();
+
+              // Filter guilds: User must have ADMINISTRATOR or MANAGE_GUILD permissions
+              // and the bot must be in the guild (implied by user's permissions if bot is invited).
+              const filteredGuilds = userGuilds.filter(guild => {
+                const userPermissions = new PermissionsBitField(guild.permissions);
+                const isAdmin = userPermissions.has(PermissionsBitField.Flags.ADMINISTRATOR) || userPermissions.has(PermissionsBitField.Flags.MANAGE_GUILD);
+                return isAdmin;
+              });
+
+              setGuilds(filteredGuilds);
+
+            } catch (err) {
+              console.error("Error fetching guilds:", err);
+              setError(`Error fetching servers: ${err.message}. Please ensure the bot is in the server and you have Administrator or Manage Server permissions.`);
+              setModalMessage(`Error fetching servers: ${err.message}. Please ensure the bot is in the server and you have Administrator or Manage Server permissions.`);
+              setShowErrorModal(true);
+            }
+          } else {
+            setGuilds([]);
+          }
+        };
+
+        if (!loading && authReady) { // Only fetch guilds once auth state is known
+          fetchUserGuilds();
+        }
+      }, [user, discordAccessToken, loading, authReady]);
+
+      // Effect to fetch guild config from Firestore when a guild is selected
+      useEffect(() => {
+        if (!firebaseUser || !authReady) return; // Ensure Firebase auth is ready
+
+        if (selectedGuild) {
+          setConfigLoading(true);
+          setError(null);
+          resetFormStates(); // Clear form when new guild selected
+
+          const guildDocRef = doc(db, 'serverConfigs', selectedGuild.id);
+
+          // Use onSnapshot for real-time updates to the config
+          const unsubscribe = onSnapshot(guildDocRef, async (docSnap) => {
+            if (docSnap.exists()) {
+              const configData = docSnap.data();
+              setGuildConfig(configData);
+              populateFormStates(configData);
+              console.log("Fetched guild config:", configData);
+            } else {
+              // If no config exists, create a default one
+              console.log("No config found for this guild, creating default.");
+              const defaultConfig = {
+                welcomeMessage: `Welcome to ${selectedGuild.name}, {user}!`,
+                welcomeChannelId: '',
+                enableWelcome: false,
+                logChannelId: '',
+                modRoleId: '',
+                ticketPingRoleId: '',
+                managementRoleId: '',
+                gameIssueRoleId: '',
+                modmailCategoryId: '',
+                rolesMustLogIds: [],
+                rolesNoLogIds: [],
+              };
+              try {
+                await setDoc(guildDocRef, defaultConfig);
+                setGuildConfig(defaultConfig);
+                populateFormStates(defaultConfig);
+                console.log("Default config created.");
+              } catch (err) {
+                console.error("Error creating default config:", err);
+                setError(`Error creating default config: ${err.message}`);
+                setModalMessage(`Error creating default config: ${err.message}`);
+                setShowErrorModal(true);
+              }
+            }
+            setConfigLoading(false);
+          }, (err) => {
+            console.error("Error listening to guild config:", err);
+            setError(`Error fetching guild config: ${err.message}`);
+            setModalMessage(`Error fetching guild config: ${err.message}`);
+            setShowErrorModal(true);
+            setConfigLoading(false);
+          });
+
+          // Fetch channels and roles for dropdowns
+          // WARNING: Fetching guild channels/roles securely requires a backend (e.g., Firebase Cloud Function)
+          // that uses your bot's token. Exposing your bot's token in frontend code is a security risk.
+          // For demonstration, this is commented out. In a real app, you'd call a Cloud Function here.
+          const fetchGuildDetailsForDropdowns = async () => {
+            // Placeholder for fetching channels and roles.
+            // In a real application, you would make a secure API call to your backend (e.g., Firebase Cloud Function)
+            // which would then use your bot's token to fetch this data from Discord.
+            // Example:
+            // const response = await fetch(`/api/guild/${selectedGuild.id}/channels_and_roles`);
+            // const data = await response.json();
+            // setGuildChannels(data.channels);
+            // setGuildRoles(data.roles);
+
+            // For now, we'll use mock data or leave empty.
+            // If you have your bot running and can manually get IDs, you can use them.
+            setGuildChannels([]); // Placeholder
+            setGuildRoles([]);   // Placeholder
+            console.warn("To populate channel/role dropdowns, you need a secure backend (e.g., Firebase Cloud Function) to fetch data from Discord using your bot's token. This is not implemented in the frontend for security reasons.");
+          };
+          fetchGuildDetailsForDropdowns();
+
+          return () => unsubscribe(); // Cleanup Firestore listener
+        } else {
+          setGuildConfig(null);
+          resetFormStates();
+        }
+      }, [selectedGuild, firebaseUser, authReady]); // Re-run when selectedGuild or Firebase user changes
+
+      const handleSaveConfig = async (e) => {
+        e.preventDefault();
+        if (!selectedGuild) {
+          setModalMessage('No server selected to save configuration.');
+          setShowErrorModal(true);
+          return;
+        }
+        if (!firebaseUser) {
+            setModalMessage('You must be logged in to save configurations.');
+            setShowErrorModal(true);
+            return;
+        }
+
+        setConfigLoading(true);
+        setError(null);
+
+        // Construct the updated config object
+        const updatedConfig = {
+          welcomeMessage: welcomeMessage,
+          welcomeChannelId: welcomeChannelId,
+          enableWelcome: enableWelcome,
+          logChannelId: logChannelId,
+          modRoleId: modRoleId,
+          ticketPingRoleId: ticketPingRoleId,
+          managementRoleId: managementRoleId,
+          gameIssueRoleId: gameIssueRoleId,
+          modmailCategoryId: modmailCategoryId,
+          // Convert comma-separated strings to arrays of IDs
+          rolesMustLogIds: rolesMustLog.split(',').map(id => id.trim()).filter(id => id !== ''),
+          rolesNoLogIds: rolesNoLog.split(',').map(id => id.trim()).filter(id => id !== ''),
+        };
+
+        try {
+          // Use setDoc with { merge: true } to update only specified fields
+          await setDoc(doc(db, 'serverConfigs', selectedGuild.id), updatedConfig, { merge: true });
+          setModalMessage('Configuration saved successfully!');
+          setShowErrorModal(true); // Reusing error modal for success message
+        } catch (err) {
+          console.error("Error saving config:", err);
+          setError(`Error saving configuration: ${err.message}`);
+          setModalMessage(`Error saving configuration: ${err.message}`);
+          setShowErrorModal(true);
+        } finally {
+          setConfigLoading(false);
+        }
+      };
+
+      if (loading || !authReady) {
+        return (
+          <div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">
+            <div className="text-xl font-semibold">Loading Dashboard...</div>
+          </div>
+        );
+      }
+
+      // If user is not logged in via Discord, redirect to index.html
+      if (!user || !discordAccessToken) {
+        window.location.href = 'index.html';
+        return null; // Don't render anything while redirecting
+      }
+
+      return (
+        <div className="min-h-screen bg-slate-900 text-white font-inter flex flex-col">
+          <div className="container mx-auto p-6 flex-grow">
+            <header className="flex flex-col md:flex-row justify-between items-center py-4 border-b border-slate-700 mb-8">
+              <h1 className="text-4xl font-extrabold text-sky-500 mb-4 md:mb-0">PFNexus Dashboard</h1>
+              <div className="flex items-center space-x-4">
+                <img src={user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64` : `https://placehold.co/64x64/000080/FFFFFF?text=${user.username ? user.username[0] : 'U'}`} alt="User Avatar" className="w-12 h-12 rounded-full border-2 border-sky-500" />
+                <span className="text-lg font-medium text-slate-200">{user.username}#{user.discriminator || '0000'}</span>
+                <button
+                  onClick={logout}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </header>
+
+            <main className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Server Selection Panel */}
+              <div className="md:col-span-1 bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
+                <h2 className="text-2xl font-bold mb-4 text-slate-100">Your Managed Servers</h2>
+                {guilds.length === 0 ? (
+                  <p className="text-slate-400">No servers found where you have Administrator or Manage Server permissions and the bot is present.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {guilds.map((guild) => (
+                      <li key={guild.id}>
+                        <button
+                          onClick={() => setSelectedGuild(guild)}
+                          className={`w-full text-left p-3 rounded-lg transition duration-200 ease-in-out flex items-center space-x-3
+                            ${selectedGuild?.id === guild.id
+                              ? 'bg-sky-700 text-white font-semibold shadow-md'
+                              : 'bg-slate-700 hover:bg-slate-600 text-slate-200'
+                            }`}
+                        >
+                          {guild.icon ? (
+                            <img src={`https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=64`} alt={`${guild.name} icon`} className="w-8 h-8 rounded-full" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-sm font-bold text-slate-300">
+                              {guild.name[0]}
+                            </div>
+                          )}
+                          <span>{guild.name}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Configuration Panel */}
+              <div className="md:col-span-2 bg-slate-800 p-8 rounded-xl shadow-lg border border-slate-700">
+                <h2 className="text-2xl font-bold mb-6 text-slate-100">
+                  {selectedGuild ? `Configure: ${selectedGuild.name}` : 'Select a Server to Configure'}
+                </h2>
+
+                {selectedGuild && (
+                  configLoading ? (
+                    <div className="text-center py-10">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto"></div>
+                      <p className="mt-4 text-lg text-slate-400">Loading Configuration...</p>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSaveConfig} className="space-y-6">
+                      {/* Welcome Message Section */}
+                      <div className="p-4 bg-slate-700 rounded-lg shadow-inner">
+                        <h3 className="text-xl font-semibold mb-3 text-slate-100">Welcome Messages</h3>
+                        <label htmlFor="enableWelcome" className="flex items-center space-x-2 mb-4 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            id="enableWelcome"
+                            checked={enableWelcome}
+                            onChange={(e) => setEnableWelcome(e.target.checked)}
+                            className="form-checkbox h-5 w-5 text-sky-500 rounded focus:ring-sky-500 bg-slate-900 border-slate-600"
+                          />
+                          <span className="text-slate-300">Enable Welcome Messages</span>
+                        </label>
+
+                        <div className="mb-4">
+                          <label htmlFor="welcomeChannel" className="block text-sm font-medium text-slate-300 mb-1">
+                            Welcome Channel ID
+                          </label>
+                          <input
+                            type="text"
+                            id="welcomeChannel"
+                            value={welcomeChannelId}
+                            onChange={(e) => setWelcomeChannelId(e.target.value)}
+                            placeholder="Enter Channel ID (e.g., 123456789012345678)"
+                            className="mt-1 block w-full px-3 py-2 border border-slate-600 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 bg-slate-900 text-white"
+                          />
+                          <p className="mt-1 text-xs text-slate-400">The ID of the text channel where new member welcome messages will be sent.</p>
+                        </div>
+
+                        <div>
+                          <label htmlFor="welcomeMessage" className="block text-sm font-medium text-slate-300 mb-1">
+                            Welcome Message Content
+                          </label>
+                          <textarea
+                            id="welcomeMessage"
+                            rows="4"
+                            value={welcomeMessage}
+                            onChange={(e) => setWelcomeMessage(e.target.value)}
+                            placeholder="Welcome to {guild}, {user}! Enjoy your stay."
+                            className="mt-1 block w-full border border-slate-600 rounded-md shadow-sm p-2 focus:ring-sky-500 focus:border-sky-500 bg-slate-900 text-white"
+                          ></textarea>
+                          <p className="mt-1 text-xs text-slate-400">
+                            Use `{`{user}`}` for the new member's mention and `{`{guild}`}` for the server name.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Logging & Moderation Section (from /setup) */}
+                      <div className="p-4 bg-slate-700 rounded-lg shadow-inner">
+                        <h3 className="text-xl font-semibold mb-3 text-slate-100">Logging & Moderation</h3>
+                        <div className="mb-4">
+                          <label htmlFor="logChannelId" className="block text-sm font-medium text-slate-300 mb-1">
+                            Log Channel ID
+                          </label>
+                          <input
+                            type="text"
+                            id="logChannelId"
+                            value={logChannelId}
+                            onChange={(e) => setLogChannelId(e.target.value)}
+                            placeholder="Enter Channel ID"
+                            className="mt-1 block w-full px-3 py-2 border border-slate-600 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 bg-slate-900 text-white"
+                          />
+                          <p className="mt-1 text-xs text-slate-400">Channel for moderation actions and ticket logs.</p>
+                        </div>
+
+                        <div className="mb-4">
+                          <label htmlFor="modRoleId" className="block text-sm font-medium text-slate-300 mb-1">
+                            Moderator Role ID
+                          </label>
+                          <input
+                            type="text"
+                            id="modRoleId"
+                            value={modRoleId}
+                            onChange={(e) => setModRoleId(e.target.value)}
+                            placeholder="Enter Role ID"
+                            className="mt-1 block w-full px-3 py-2 border border-slate-600 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 bg-slate-900 text-white"
+                          />
+                          <p className="mt-1 text-xs text-slate-400">Role for additional moderator permissions.</p>
+                        </div>
+
+                        <div className="mb-4">
+                          <label htmlFor="modmailCategoryId" className="block text-sm font-medium text-slate-300 mb-1">
+                            Modmail Category ID
+                          </label>
+                          <input
+                            type="text"
+                            id="modmailCategoryId"
+                            value={modmailCategoryId}
+                            onChange={(e) => setModmailCategoryId(e.target.value)}
+                            placeholder="Enter Category ID"
+                            className="mt-1 block w-full px-3 py-2 border border-slate-600 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 bg-slate-900 text-white"
+                          />
+                          <p className="mt-1 text-xs text-slate-400">Category for new ticket channels created by the bot.</p>
+                        </div>
+                      </div>
+
+                      {/* Ticket Ping Roles Section (from /setup) */}
+                      <div className="p-4 bg-slate-700 rounded-lg shadow-inner">
+                        <h3 className="text-xl font-semibold mb-3 text-slate-100">Ticket Ping Roles</h3>
+                        <div className="mb-4">
+                          <label htmlFor="ticketPingRoleId" className="block text-sm font-medium text-slate-300 mb-1">
+                            General Ticket Ping Role ID
+                          </label>
+                          <input
+                            type="text"
+                            id="ticketPingRoleId"
+                            value={ticketPingRoleId}
+                            onChange={(e) => setTicketPingRoleId(e.target.value)}
+                            placeholder="Enter Role ID"
+                            className="mt-1 block w-full px-3 py-2 border border-slate-600 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 bg-slate-900 text-white"
+                          />
+                          <p className="mt-1 text-xs text-slate-400">Role to ping for 'Other/General Support' tickets.</p>
+                        </div>
+
+                        <div className="mb-4">
+                          <label htmlFor="managementRoleId" className="block text-sm font-medium text-slate-300 mb-1">
+                            Management Ticket Ping Role ID
+                          </label>
+                          <input
+                            type="text"
+                            id="managementRoleId"
+                            value={managementRoleId}
+                            onChange={(e) => setManagementRoleId(e.target.value)}
+                            placeholder="Enter Role ID"
+                            className="mt-1 block w-full px-3 py-2 border border-slate-600 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 bg-slate-900 text-white"
+                          />
+                          <p className="mt-1 text-xs text-slate-400">Role to ping for 'Serious Issues' and 'Perk Claim' tickets.</p>
+                        </div>
+
+                        <div className="mb-4">
+                          <label htmlFor="gameIssueRoleId" className="block text-sm font-medium text-slate-300 mb-1">
+                            Ingame Issues Ticket Ping Role ID
+                          </label>
+                          <input
+                            type="text"
+                            id="gameIssueRoleId"
+                            value={gameIssueRoleId}
+                            onChange={(e) => setGameIssueRoleId(e.target.value)}
+                            placeholder="Enter Role ID"
+                            className="mt-1 block w-full px-3 py-2 border border-slate-600 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 bg-slate-900 text-white"
+                          />
+                          <p className="mt-1 text-xs text-slate-400">Role to ping for 'Ingame Issues' tickets.</p>
+                        </div>
+                      </div>
+
+                      {/* Flight Log Roles Section (from /setup) */}
+                      <div className="p-4 bg-slate-700 rounded-lg shadow-inner">
+                        <h3 className="text-xl font-semibold mb-3 text-slate-100">Flight Log Roles</h3>
+                        <div className="mb-4">
+                          <label htmlFor="rolesMustLog" className="block text-sm font-medium text-slate-300 mb-1">
+                            Roles That MUST Log Flights (IDs, comma-separated)
+                          </label>
+                          <input
+                            type="text"
+                            id="rolesMustLog"
+                            value={rolesMustLog}
+                            onChange={(e) => setRolesMustLog(e.target.value)}
+                            placeholder="RoleID1,RoleID2"
+                            className="mt-1 block w-full border border-slate-600 rounded-md shadow-sm p-2 focus:ring-sky-500 focus:border-sky-500 bg-slate-900 text-white"
+                          />
+                          <p className="mt-1 text-xs text-slate-400">
+                            Comma-separated list of Role IDs. Members with these roles MUST log flights. Leave empty to apply to all non-excluded members.
+                          </p>
+                        </div>
+
+                        <div className="mb-4">
+                          <label htmlFor="rolesNoLog" className="block text-sm font-medium text-slate-300 mb-1">
+                            Roles That DO NOT Need to Log Flights (IDs, comma-separated)
+                          </label>
+                          <input
+                            type="text"
+                            id="rolesNoLog"
+                            value={rolesNoLog}
+                            onChange={(e) => setRolesNoLog(e.target.value)}
+                            placeholder="RoleID1,RoleID2"
+                            className="mt-1 block w-full border border-slate-600 rounded-md shadow-sm p-2 focus:ring-sky-500 focus:border-sky-500 bg-slate-900 text-white"
+                          />
+                          <p className="mt-1 text-xs text-slate-400">
+                            Comma-separated list of Role IDs. Members with these roles DO NOT need to log flights.
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
+                        disabled={configLoading}
+                      >
+                        {configLoading ? 'Saving...' : 'Save Configuration'}
+                      </button>
+                    </form>
+                  )
+                )}
+              </div>
+            </main>
+          </div>
+
+          {showErrorModal && (
+            <Modal title="Notification" onClose={() => setShowErrorModal(false)}>
+              <p className="text-slate-300 text-center">{modalMessage}</p>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="mt-6 w-full px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg shadow-md transition duration-300 ease-in-out"
+              >
+                Close
+              </button>
+            </Modal>
+          )}
+
+          <footer class="mt-8 py-4 text-center text-slate-500 text-sm">
+            &copy; 2025 PFNexus. All rights reserved.
+          </footer>
+        </div>
+      );
+    };
+
+    // Render the App wrapped with AuthProvider
+    ReactDOM.createRoot(document.getElementById('root')).render(
+      <React.StrictMode>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </React.StrictMode>
+    );
+  </script>
+</body>
+</html>
