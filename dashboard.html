@@ -22,7 +22,7 @@
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(30px); }
-      to { transform: translateY(0); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     /* Styles for the modal */
@@ -580,8 +580,13 @@
       const storedUser = localStorage.getItem('discordUser');
       const storedAccessToken = localStorage.getItem('discordAccessToken');
 
+      console.log("PFNexus Dashboard: Checking localStorage for user and token...");
+      console.log("PFNexus Dashboard: storedUser:", storedUser ? "Found" : "Not Found", storedUser);
+      console.log("PFNexus Dashboard: storedAccessToken:", storedAccessToken ? "Found" : "Not Found", storedAccessToken);
+
+
       if (!storedUser || !storedAccessToken) {
-        console.log("Discord user or token missing. Redirecting to index.html.");
+        console.log("PFNexus Dashboard: Discord user or token missing. Redirecting to index.html.");
         window.location.href = 'index.html';
         return;
       }
@@ -593,19 +598,19 @@
       // Firebase Auth Listener
       onAuthStateChanged(auth, async (user) => {
         if (!user) {
-          console.log("Firebase: No user signed in, attempting anonymous sign-in.");
+          console.log("PFNexus Dashboard: Firebase: No user signed in, attempting anonymous sign-in.");
           try {
             await signInAnonymously(auth);
-            console.log("Firebase: Signed in anonymously.");
+            console.log("PFNexus Dashboard: Firebase: Signed in anonymously.");
           } catch (error) {
-            console.error("Firebase: Error signing in anonymously:", error);
+            console.error("PFNexus Dashboard: Firebase: Error signing in anonymously:", error);
             showModal("Authentication Error", "Failed to authenticate with Firebase. Please try again.");
             // Consider redirecting or showing a persistent error if anonymous sign-in fails
             return;
           }
         }
         firebaseAuthReady = true;
-        console.log("Firebase: Auth ready. Current Firebase User UID:", auth.currentUser.uid);
+        console.log("PFNexus Dashboard: Firebase: Auth ready. Current Firebase User UID:", auth.currentUser.uid);
         fetchUserGuilds(); // Fetch guilds only after Firebase auth is ready
       });
     }
@@ -615,7 +620,7 @@
      */
     async function fetchUserGuilds() {
       if (!currentUser || !discordAccessToken || !firebaseAuthReady) {
-        console.log("Skipping guild fetch: Discord user/token or Firebase auth not ready.");
+        console.log("PFNexus Dashboard: Skipping guild fetch: Discord user/token or Firebase auth not ready.");
         return;
       }
 
@@ -646,10 +651,10 @@
 
         allGuilds = filteredGuilds; // Store for re-rendering
         renderGuilds(allGuilds);
-        console.log("Successfully fetched and filtered guilds.");
+        console.log("PFNexus Dashboard: Successfully fetched and filtered guilds.");
 
       } catch (err) {
-        console.error("Error fetching guilds:", err);
+        console.error("PFNexus Dashboard: Error fetching guilds:", err);
         showModal("Error", `Error fetching servers: ${err.message}. Please ensure the bot is in the server and you have Administrator or Manage Server permissions.`);
         guildsListDiv.innerHTML = `<p class="text-red-400">Failed to load servers. ${err.message}</p>`;
       }
