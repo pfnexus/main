@@ -576,26 +576,65 @@
      * Initializes the dashboard by checking Discord auth and fetching guilds.
      */
     async function initializeDashboard() {
-      // Check Discord user and token from localStorage
-      const storedUser = localStorage.getItem('discordUser');
-      const storedAccessToken = localStorage.getItem('discordAccessToken');
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const tokenFromUrl = params.get("access_token");
 
-      console.log("PFNexus Dashboard: Checking localStorage for user and token...");
-      console.log("PFNexus Dashboard: storedUser:", storedUser ? "Found" : "Not Found", storedUser);
-      console.log("PFNexus Dashboard: storedAccessToken:", storedAccessToken ? "Found" : "Not Found", storedAccessToken);
+      console.log("PFNexus Dashboard: Initializing...");
 
+      if (tokenFromUrl) {
+        console.log("PFNexus Dashboard: Found access_token in URL hash. Processing...");
+        // Clear hash from URL to prevent re-processing on refresh
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
 
-      if (!storedUser || !storedAccessToken) {
-        console.log("PFNexus Dashboard: Discord user or token missing. Redirecting to index.html.");
-        window.location.href = 'index.html';
-        return;
+        try {
+          const response = await fetch("https://discord.com/api/users/@me", {
+            headers: { Authorization: `Bearer ${tokenFromUrl}` }
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch user data from Discord: ${response.status}`);
+          }
+          const user = await response.json();
+
+          localStorage.setItem("discordUser", JSON.stringify(user));
+          localStorage.setItem("discordAccessToken", tokenFromUrl);
+          console.log("PFNexus Dashboard: Stored user and access token from URL hash.");
+
+          currentUser = user;
+          discordAccessToken = tokenFromUrl;
+          displayUserInfo(currentUser);
+
+        } catch (error) {
+          console.error("PFNexus Dashboard: Error processing token from URL:", error);
+          showModal("Authentication Error", `Failed to retrieve Discord user data: ${error.message}. Please try logging in again.`);
+          // Fallback to local storage check or force logout if token is bad
+          localStorage.removeItem("discordUser");
+          localStorage.removeItem("discordAccessToken");
+          window.location.href = 'index.html';
+          return;
+        }
+      } else {
+        // If no token in URL, check localStorage
+        const storedUser = localStorage.getItem('discordUser');
+        const storedAccessToken = localStorage.getItem('discordAccessToken');
+
+        console.log("PFNexus Dashboard: No token in URL. Checking localStorage...");
+        console.log("PFNexus Dashboard: storedUser:", storedUser ? "Found" : "Not Found", storedUser);
+        console.log("PFNexus Dashboard: storedAccessToken:", storedAccessToken ? "Found" : "Not Found", storedAccessToken);
+
+        if (!storedUser || !storedAccessToken) {
+          console.log("PFNexus Dashboard: Discord user or token missing in localStorage. Redirecting to index.html.");
+          window.location.href = 'index.html';
+          return;
+        }
+
+        currentUser = JSON.parse(storedUser);
+        discordAccessToken = storedAccessToken;
+        displayUserInfo(currentUser);
       }
 
-      currentUser = JSON.parse(storedUser);
-      discordAccessToken = storedAccessToken;
-      displayUserInfo(currentUser);
-
-      // Firebase Auth Listener
+      // Firebase Auth Listener (runs after Discord auth is handled)
       onAuthStateChanged(auth, async (user) => {
         if (!user) {
           console.log("PFNexus Dashboard: Firebase: No user signed in, attempting anonymous sign-in.");
@@ -605,7 +644,6 @@
           } catch (error) {
             console.error("PFNexus Dashboard: Firebase: Error signing in anonymously:", error);
             showModal("Authentication Error", "Failed to authenticate with Firebase. Please try again.");
-            // Consider redirecting or showing a persistent error if anonymous sign-in fails
             return;
           }
         }
