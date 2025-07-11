@@ -190,11 +190,11 @@
   </div>
 
   <script>
-    // IMPORTANT: REPLACE WITH YOUR ACTUAL DISCORD BOT'S CLIENT ID
+    // Replace with your Discord Bot's actual Client ID
     const CLIENT_ID = "1391167308046794834";
-    // IMPORTANT: REPLACE WITH THE EXACT URL OF YOUR dashboard.html ON YOUR ACTUAL WEBSITE (from Step 1)
-    // Example: "https://www.yourwebsite.com/dashboard.html"
-    const REDIRECT_URI = "https://pfnexus.github.io/main/dashboard.html"; 
+    // IMPORTANT: This REDIRECT_URI MUST be configured in your Discord Developer Portal
+    // OAuth2 -> General -> Redirects. It should point to your hosted dashboard.html.
+    const REDIRECT_URI = "https://pfnexus.github.io/main/dashboard.html"; // e.g., "https://your-domain.com/dashboard.html"
 
     // Scopes for Discord OAuth:
     // identify: To get user's basic profile (username, avatar).
@@ -247,12 +247,20 @@
       const token = params.get("access_token");
       const savedUser = JSON.parse(localStorage.getItem("discordUser"));
 
+      console.log("PFNexus Landing Page: DOMContentLoaded. Checking for OAuth token...");
+      console.log("PFNexus Landing Page: Token from URL hash:", token ? "Found" : "Not Found", token);
+      console.log("PFNexus Landing Page: Saved user in localStorage:", savedUser ? "Found" : "Not Found", savedUser);
+      console.log("PFNexus Landing Page: Saved access token in localStorage:", localStorage.getItem("discordAccessToken") ? "Found" : "Not Found", localStorage.getItem("discordAccessToken"));
+
+
       if (token) {
         // Clear hash from URL to prevent re-processing on refresh
         window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
 
         // Store the token for dashboard access
         localStorage.setItem("discordAccessToken", token);
+        console.log("PFNexus Landing Page: Stored access token in localStorage:", localStorage.getItem("discordAccessToken"));
+
 
         // Fetch user info using the access token
         fetch("https://discord.com/api/users/@me", {
@@ -267,23 +275,26 @@
         })
         .then(user => {
           localStorage.setItem("discordUser", JSON.stringify(user));
+          console.log("PFNexus Landing Page: Stored user data in localStorage:", localStorage.getItem("discordUser"));
           showUser(user);
           // Redirect to dashboard after successful login and user data retrieval
           window.location.href = `dashboard.html`;
         })
         .catch((error) => {
-          console.error("Error fetching Discord user data:", error);
+          console.error("PFNexus Landing Page: Error fetching Discord user data:", error);
           localStorage.removeItem("discordUser");
           localStorage.removeItem("discordAccessToken");
           showLoginButton();
         });
       } else if (savedUser && localStorage.getItem("discordAccessToken")) {
         // If user and token are already in local storage, show user info directly
+        console.log("PFNexus Landing Page: User and token found in localStorage. Redirecting to dashboard.html.");
         showUser(savedUser);
         // Automatically redirect to dashboard if already logged in
         window.location.href = `dashboard.html`;
       } else {
         // No token in URL, no user in local storage, show login button
+        console.log("PFNexus Landing Page: No token or saved user found. Showing login button.");
         showLoginButton();
       }
 
