@@ -330,7 +330,7 @@
           // If no config exists, create a default one
           console.log("Firestore: No config found for this guild, creating default.");
           const defaultConfig = {
-            welcomeMessage: `Welcome to ${selectedGuild.name}, {user}!`,
+            welcomeMessage: `Welcome to ${selectedGuild.name}, &lbrace;user&rbrace;!`, // Escaped curly braces
             welcomeChannelId: '',
             enableWelcome: false,
             logChannelId: '',
