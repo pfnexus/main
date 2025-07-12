@@ -86,18 +86,18 @@
     }
   </style>
 </head>
-<body class="bg-slate-900 text-white overflow-hidden">
+<body class="bg-slate-900 text-white overflow-hidden flex flex-col items-center justify-center min-h-screen">
 
   <div id="loading-screen">
     <div class="loader"></div>
   </div>
 
-  <div class="container flex flex-col items-center justify-center min-h-screen text-center p-5">
+  <div class="container bg-slate-800 rounded-lg shadow-2xl p-8 md:p-12 max-w-xl w-full mx-auto text-center flex flex-col items-center">
 
-    <h1 class="text-5xl md:text-6xl font-bold mb-5">Welcome to <span class="text-sky-400">PFNexus</span></h1>
-    <p class="text-lg md:text-xl text-slate-400 mb-8">The ultimate hub to manage your Discord servers with power & style.</p>
-    <div class="user-actions"></div>
-    <footer class="absolute bottom-4 text-sm text-slate-500">&copy; 2025 PFNexus. All rights reserved.</footer>
+    <h1 class="text-4xl md:text-5xl font-extrabold mb-4 leading-tight">Welcome to <span class="text-sky-400">PFNexus</span></h1>
+    <p class="text-md md:text-lg text-slate-300 mb-8 max-w-md">The ultimate hub to manage your Discord servers with power & style.</p>
+    <div class="user-actions w-full"></div>
+    <footer class="mt-8 text-sm text-slate-500">&copy; 2025 PFNexus. All rights reserved.</footer>
   </div>
 
   <script>
@@ -121,13 +121,13 @@
         : 'https://discord.com/assets/f135b1fcd3d2c4935480d19e910540d5.png'; // Default Discord avatar
 
       userActionsDiv.innerHTML = `
-        <div class="user-profile-summary flex flex-col items-center gap-4 mt-5">
-          <img src="${avatarUrl}" alt="Avatar" class="w-24 h-24 rounded-full shadow-lg border-3 border-sky-500">
-          <span class="username-text text-xl font-semibold text-slate-200">${user.username}#${user.discriminator || '0000'}</span>
+        <div class="user-profile-summary flex flex-col items-center gap-4 mb-6 p-4 bg-slate-700 rounded-lg w-full">
+          <img src="${avatarUrl}" alt="Avatar" class="w-28 h-28 rounded-full border-4 border-sky-400 shadow-xl">
+          <span class="username-text text-2xl font-bold text-slate-100">${user.username}#${user.discriminator || '0000'}</span>
         </div>
-        <div class="action-buttons flex flex-col gap-4 mt-5">
-          <a class="btn-dashboard bg-sky-500 text-white px-6 py-3 rounded-lg font-bold transition-all duration-300 hover:bg-sky-600 hover:scale-105" href="dashboard.html">Go to Dashboard</a>
-          <button class="btn-logout bg-red-500 text-white px-6 py-3 rounded-lg font-bold transition-all duration-300 hover:bg-red-600 hover:scale-105" onclick="logout()">Logout</button>
+        <div class="action-buttons flex flex-col gap-4 w-full">
+          <a class="btn-dashboard w-full py-3 px-6 rounded-lg font-bold text-lg bg-sky-500 text-white transition-all duration-300 hover:bg-sky-600 hover:scale-105 shadow-md" href="dashboard.html">Go to Dashboard</a>
+          <button class="btn-logout w-full py-3 px-6 rounded-lg font-bold text-lg bg-red-500 text-white transition-all duration-300 hover:bg-red-600 hover:scale-105 shadow-md" onclick="logout()">Logout</button>
         </div>
       `;
     }
@@ -135,7 +135,7 @@
     // Function to display the login button
     function showLoginButton() {
       userActionsDiv.innerHTML = `
-        <a href="${AUTH_URL}" class="discord-btn inline-flex items-center gap-2 px-7 py-3 rounded-xl text-white font-bold text-lg">
+        <a href="${AUTH_URL}" class="discord-btn inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-lg shadow-lg">
           <svg aria-hidden="true" role="img" viewBox="0 0 640 512" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor">
             <path d="M524.531 6.377c-43.63-6.2-104.862-2.316-150.5 16.948-28.784 12.013-46.291 27.56-56.782 42.66-.027.038-.053.077-.08.116-.013.018-.027.037-.04.055-.03.042-.058.084-.088.125-.013.018-.027.037-.04.055-10.491 15.1-27.998 30.647-56.782 42.66C159.33 4.061 98.098 0 54.469 6.377c-33.723 4.8-60.034 14.5-78.483 29.176-15.602 12.18-28.723 28.544-37.425 47.003C-4.497 122.043-.687 157.023 10.658 195.632c2.08 7.447 4.29 15.041 6.643 22.802 1.322 4.39 2.684 8.874 4.103 13.435 1.18 3.754 2.378 7.527 3.61 11.313 1.257 3.864 2.532 7.747 3.844 11.648 3.015 9.173 6.082 18.394 9.207 27.646 1.343 3.932 2.697 7.878 4.067 11.838 7.029 20.354 14.331 41.054 21.926 61.947 1.378 3.719 2.766 7.464 4.168 11.233 7.643 20.256 15.54 40.852 23.633 61.542 1.378 3.535 2.766 7.086 4.168 10.669 8.093 20.087 16.498 40.063 25.093 59.852 1.345 3.097 2.71 6.182 4.103 9.259 9.02 19.467 18.352 38.835 27.97 58.027 1.22 2.404 2.457 4.801 3.71 7.185 10.012 18.924 20.394 37.75 31.11 56.425 1.18 2.046 2.384 4.088 3.61 6.12 11.04 18.912 22.4 37.52 34.093 55.833.037.057.073.115.11.172 12.013 18.912 24.537 37.52 37.425 55.833 1.22 2.046 2.457 4.088 3.71 6.12 10.012 18.924 20.394 37.75 31.11 56.425 1.18 2.404 2.378 4.801 3.61 7.185 9.02 19.467 18.352 38.835 27.97 58.027 1.343 3.097 2.71 6.182 4.103 9.259 8.093 20.087 16.498 40.063 25.093 59.852 1.378 3.535 2.766 7.086 4.168 10.669 7.643 20.256 15.54 40.852 23.633 61.542 1.378 3.719 2.766 7.464 4.168 11.233 7.029 20.354 14.331 41.054 21.926 61.947 1.257 3.864 2.532 7.747 3.844 11.648 1.18 3.754 2.378 7.527 3.61 11.313 1.322 4.39 2.684 8.874 4.103 13.435 2.08 7.447 4.29 15.041 6.643 22.802 11.345 38.609 15.155 73.589 10.658 195.632-4.497 122.043-.687 157.023 10.658 195.632z"></path>
           </svg>
