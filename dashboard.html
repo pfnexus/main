@@ -15,14 +15,107 @@
       background-color: #0f172a; /* Tailwind slate-900 */
       color: white;
       overflow-x: hidden; /* Prevent horizontal scroll */
-      animation: fadeIn 1s ease-out;
+      /* No fadeIn on body directly, loading screen will handle initial opacity */
       padding: 0; /* Remove body padding as it's handled by container */
+      overflow: hidden; /* Hide scrollbar while loading */
     }
 
+    /* Keyframes */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(30px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    @keyframes modalSlideIn {
+      from { opacity: 0; transform: translateY(-50px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid #38bdf8; /* Tailwind sky-500 */
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto; /* Center the spinner */
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* --- New Loading Screen Styles --- */
+    @keyframes fadeOut {
+      to { opacity: 0; visibility: hidden; }
+    }
+
+    @keyframes logoBounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-15px); }
+    }
+
+    @keyframes textWave {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+
+    @keyframes dotPulse {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
+    }
+
+    #loading-screen {
+      position: fixed;
+      width: 100vw;
+      height: 100vh;
+      background-color: #0f172a; /* Main background color for a consistent look */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      /* Animation: Stays fully opaque for 4.5s, then fades out over 0.5s */
+      animation: fadeOut 0.5s ease-out 4.5s forwards; /* Adjust timings as needed based on actual content load */
+    }
+
+    .loader-logo {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        margin-bottom: 25px;
+        animation: logoBounce 1.8s infinite ease-in-out alternate;
+    }
+
+    .loader-text {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: #e2e8f0;
+        display: flex;
+    }
+
+    .loader-text span {
+        display: inline-block;
+        animation: textWave 1.2s infinite ease-in-out alternate;
+    }
+
+    .loader-text span:nth-child(1) { animation-delay: 0s; }
+    .loader-text span:nth-child(2) { animation-delay: 0.1s; }
+    .loader-text span:nth-child(3) { animation-delay: 0.2s; }
+    .loader-text span:nth-child(4) { animation-delay: 0.3s; }
+    .loader-text span:nth-child(5) { animation-delay: 0.4s; }
+    .loader-text span:nth-child(6) { animation-delay: 0.5s; }
+    .loader-text span:nth-child(7) { animation-delay: 0.6s; }
+
+    .loader-text .dot-pulse {
+        margin-left: 2px;
+        animation: dotPulse 1.5s infinite ease-in-out;
+    }
+    .loader-text .dot-pulse:nth-child(8) { animation-delay: 0.7s; }
+    .loader-text .dot-pulse:nth-child(9) { animation-delay: 0.9s; }
+    .loader-text .dot-pulse:nth-child(10) { animation-delay: 1.1s; }
+    /* --- End New Loading Screen Styles --- */
 
     /* Styles for the modal */
     .modal-overlay {
@@ -52,11 +145,6 @@
       animation: modalSlideIn 0.3s ease-out forwards;
     }
 
-    @keyframes modalSlideIn {
-      from { opacity: 0; transform: translateY(-50px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
     .modal-close-btn {
       position: absolute;
       top: 1rem;
@@ -71,28 +159,19 @@
       color: #cbd5e1; /* Tailwind slate-300 */
       transform: rotate(90deg); /* Little animation */
     }
-
-    /* Spinner for loading states */
-    .spinner {
-      border: 4px solid rgba(255, 255, 255, 0.3);
-      border-top: 4px solid #38bdf8; /* Tailwind sky-500 */
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto; /* Center the spinner */
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
   </style>
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex flex-col">
 
-  <div class="flex flex-col md:flex-row flex-grow">
-    <aside class="w-full md:w-80 bg-slate-800 p-6 shadow-xl border-r border-slate-700 flex-shrink-0">
+  <div id="loading-screen">
+    <img src="pfnexus.png" alt="PFNexus Logo" class="loader-logo" />
+    <div class="loader-text">
+      <span>L</span><span>o</span><span>a</span><span>d</span><span>i</span><span>n</span><span>g</span>
+      <span class="dot-pulse">.</span><span class="dot-pulse">.</span><span class="dot-pulse">.</span>
+    </div>
+  </div>
+
+  <div id="dashboard-content" class="flex flex-col md:flex-row flex-grow opacity-0"> <aside class="w-full md:w-80 bg-slate-800 p-6 shadow-xl border-r border-slate-700 flex-shrink-0">
       <div class="flex items-center space-x-4 mb-8">
         <img src="pfnexus.png" alt="PFNexus Logo" class="h-14 w-auto rounded-full shadow-lg" />
         <h1 class="text-3xl font-extrabold text-sky-500">PFNexus</h1>
@@ -166,6 +245,8 @@
     const configPanelTitle = document.getElementById('config-panel-title');
     const configFormContainer = document.getElementById('config-form-container');
     const modalContainer = document.getElementById('modal-container');
+    const dashboardContent = document.getElementById('dashboard-content'); // New: Main content wrapper
+    const loadingScreen = document.getElementById('loading-screen'); // New: Loading screen element
 
     // --- Utility Functions ---
 
@@ -685,49 +766,74 @@
      */
     async function fetchUserGuilds() {
       if (!currentUser || !discordAccessToken || !firebaseAuthReady) {
-        console.log("PFNexus Dashboard: Skipping guild fetch: Discord user/token or Firebase auth not ready.");
+        console.log("PFNexus Dashboard: Skipping guild fetch: Dependencies not met.");
         return;
       }
 
+      guildsListDiv.innerHTML = `
+        <div class="text-center py-5">
+          <div class="spinner mx-auto mb-2"></div>
+          <p class="text-slate-400 text-sm">Fetching your servers...</p>
+        </div>
+      `;
+
       try {
-        const response = await fetch('https://discord.com/api/users/@me/guilds', {
-          headers: {
-            Authorization: `Bearer ${discordAccessToken}`,
-          },
+        console.log("PFNexus Dashboard: Attempting to fetch guilds...");
+        const response = await fetch("https://discord.com/api/users/@me/guilds", {
+          headers: { Authorization: `Bearer ${discordAccessToken}` }
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          if (response.status === 401) {
-              showModal("Session Expired", "Your Discord session has expired. Please log in again.");
-              handleLogout(); // Force logout and redirect
-              return;
+          if (response.status === 401) { // Unauthorized, token might be expired
+            throw new Error("Discord token expired or invalid. Please re-login.");
           }
-          throw new Error(`Failed to fetch guilds: ${response.status} - ${errorData.message}`);
+          throw new Error(`Failed to fetch guilds from Discord: ${response.status}`);
         }
 
-        const userGuilds = await response.json();
+        const guilds = await response.json();
+        console.log("PFNexus Dashboard: Raw guilds fetched:", guilds);
 
-        // Filter guilds: User must have ADMINISTRATOR or MANAGE_GUILD permissions
-        const filteredGuilds = userGuilds.filter(guild => {
-          const userPermissions = new PermissionsBitField(guild.permissions);
-          return userPermissions.has(PermissionsBitField.Flags.ADMINISTRATOR) || userPermissions.has(PermissionsBitField.Flags.MANAGE_GUILD);
+        // Filter guilds where the user has ADMINISTRATOR or MANAGE_GUILD permission
+        const managedGuilds = guilds.filter(guild => {
+          const permissions = new PermissionsBitField(guild.permissions);
+          return permissions.has(PermissionsBitField.Flags.ADMINISTRATOR) ||
+                 permissions.has(PermissionsBitField.Flags.MANAGE_GUILD);
         });
 
-        allGuilds = filteredGuilds; // Store for re-rendering
-        renderGuilds(allGuilds);
-        console.log("PFNexus Dashboard: Successfully fetched and filtered guilds.");
+        console.log("PFNexus Dashboard: Managed guilds (Admin/Manage Guild):", managedGuilds);
+        allGuilds = managedGuilds; // Store for re-rendering
+        renderGuilds(managedGuilds);
 
-      } catch (err) {
-        console.error("PFNexus Dashboard: Error fetching guilds:", err);
-        showModal("Error", `Error fetching servers: ${err.message}. Please ensure the bot is in the server and you have Administrator or Manage Server permissions.`);
-        guildsListDiv.innerHTML = `<p class="text-red-400">Failed to load servers. ${err.message}</p>`;
+      } catch (error) {
+        console.error("PFNexus Dashboard: Error fetching guilds:", error);
+        guildsListDiv.innerHTML = `<p class="text-red-400 text-sm">Failed to load servers: ${error.message}</p>`;
+        showModal("Error Loading Servers", `There was an issue fetching your Discord servers. ${error.message}. Please try refreshing or logging in again.`);
+        // If token is invalid, force logout
+        if (error.message.includes("token expired") || error.message.includes("Unauthorized")) {
+            handleLogout();
+        }
       }
     }
 
-    // Initialize the dashboard when the DOM is fully loaded
-    document.addEventListener('DOMContentLoaded', initializeDashboard);
+    // --- Loading Screen Fade Out Logic (Integrated into DOMContentLoaded) ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // Hide loading screen after 5 seconds (4.5s visible + 0.5s fade)
+        setTimeout(() => {
+            if (loadingScreen) {
+                loadingScreen.style.animation = 'fadeOut 0.5s ease-out forwards';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    // Make main content visible and apply its initial animation
+                    dashboardContent.style.opacity = '1';
+                    dashboardContent.style.animation = 'fadeIn 1s ease-out forwards';
+                    document.body.style.overflow = 'visible'; // Allow scrolling after content loads
+                }, 500); // Duration of fadeOut animation
+            }
+        }, 4500); // Delay before fadeOut starts
 
+        initializeDashboard();
+    });
   </script>
+
 </body>
 </html>
