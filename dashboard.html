@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Use Phosphor Icons for a stylish icon set -->
     <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/dist/phosphor-icons.js"></script>
+    <!-- Chart.js for creating interactive charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <style>
         /* Define custom styles for a smooth appearance */
         :root {
@@ -35,12 +37,50 @@
             -ms-overflow-style: none; /* IE and Edge */
             scrollbar-width: none; /* Firefox */
         }
+        
+        /* Sidebar custom animation and positioning */
+        #sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        @media (max-width: 768px) {
+            #sidebar.translate-x-0 {
+                transform: translateX(0);
+            }
+            #sidebar.-translate-x-full {
+                transform: translateX(-100%);
+            }
+        }
+
+        /* Custom styles for sidebar links */
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            color: #94a3b8;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .sidebar-link:hover {
+            background-color: #334155;
+            color: #e2e8f0;
+        }
+
+        .sidebar-link.bg-slate-700 {
+            color: #fff;
+        }
+
+        .sidebar-link span {
+            margin-left: 1rem;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-700 flex flex-col p-4 shadow-xl z-20 transition-transform -translate-x-full md:translate-x-0">
+    <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-700 flex flex-col p-4 shadow-xl z-20 md:translate-x-0 fixed md:static h-full -translate-x-full">
         <!-- Logo and Title -->
         <div class="flex items-center space-x-3 mb-8">
             <svg class="h-8 w-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -48,6 +88,15 @@
             </svg>
             <h1 class="text-xl font-bold text-slate-100">PFNexus</h1>
         </div>
+        
+        <!-- Server Management Section -->
+        <div class="mb-4">
+            <h3 class="text-sm font-semibold text-slate-400 mb-2">Server Management</h3>
+            <select id="server-select" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors">
+                <!-- Server options will be dynamically added here -->
+            </select>
+        </div>
+
         <!-- Navigation Menu -->
         <nav class="flex-grow">
             <ul class="space-y-2">
@@ -87,14 +136,14 @@
         <div class="mt-8">
             <div class="flex flex-col space-y-2 p-2 bg-slate-800 rounded-lg">
                 <div class="flex items-center space-x-3">
-                    <img src="https://placehold.co/40x40/0d0d0d/white?text=A" alt="User Avatar" class="h-10 w-10 rounded-full border border-slate-700">
+                    <img src="https://placehold.co/40x40/0d0d0d/white?text=U" alt="User Avatar" class="h-10 w-10 rounded-full border border-slate-700">
                     <div>
-                        <p class="text-sm font-semibold">User Name</p>
-                        <p class="text-xs text-slate-400">#1234</p>
+                        <p class="text-sm font-semibold">Current User</p>
+                        <p class="text-xs text-slate-400">#0000</p>
                     </div>
                 </div>
                 <!-- Display the full User ID here for multi-user apps -->
-                <p class="text-xs text-slate-500 break-all" id="user-id-display"></p>
+                <p class="text-xs text-slate-500 break-all" id="user-id-display">Loading User ID...</p>
             </div>
             <button id="logout-button" class="mt-4 w-full p-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-medium transition-colors">
                 Logout
@@ -264,20 +313,20 @@
             <div id="analytics-page" class="page-content" style="display: none;">
                 <h2 class="text-3xl font-extrabold mb-6 text-slate-100">Analytics</h2>
                 <div class="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 space-y-6">
-                    <p class="text-slate-400">This section provides a visual overview of your server's activity and member growth. We've simplified the charts to focus on key metrics that are easy to understand.</p>
+                    <p class="text-slate-400">This section provides a visual overview of your server's activity and member growth.</p>
                     
                     <!-- Analytics Card 1: Member Growth -->
                     <div class="bg-slate-700/50 p-4 rounded-lg">
                         <h3 class="text-lg font-semibold mb-2">Member Growth</h3>
-                        <p class="text-sm text-slate-400 mb-4">See how many new members have joined your server over the last 30 days.</p>
-                        <img src="https://placehold.co/800x300/0f172a/94a3b8?text=Member+Growth+Chart" alt="Member Growth Chart Placeholder" class="w-full rounded-md">
+                        <p class="text-sm text-slate-400 mb-4">See how many new members have joined your server over the last 7 days.</p>
+                        <canvas id="member-growth-chart" class="w-full h-80"></canvas>
                     </div>
                     
                     <!-- Analytics Card 2: Message Activity -->
                     <div class="bg-slate-700/50 p-4 rounded-lg">
                         <h3 class="text-lg font-semibold mb-2">Message Activity</h3>
                         <p class="text-sm text-slate-400 mb-4">Visualize message counts per day to identify peak activity times.</p>
-                        <img src="https://placehold.co/800x300/0f172a/94a3b8?text=Message+Activity+Chart" alt="Message Activity Chart Placeholder" class="w-full rounded-md">
+                        <canvas id="message-activity-chart" class="w-full h-80"></canvas>
                     </div>
                 </div>
             </div>
@@ -301,7 +350,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, collection, query, limit, orderBy, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, collection, query, limit, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // IMPORTANT: These values are hardcoded from the file you provided.
         const firebaseConfig = {
@@ -319,6 +368,7 @@
         let db;
         let auth;
         let userId;
+        let selectedServerId = null;
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
@@ -337,6 +387,7 @@
         const modalCancelButton = document.getElementById('modal-cancel');
         const modalConfirmButton = document.getElementById('modal-confirm');
         const userIdDisplay = document.getElementById('user-id-display');
+        const serverSelect = document.getElementById('server-select');
         
         // Dashboard Stats
         const totalMembersCount = document.getElementById('total-members-count');
@@ -351,7 +402,16 @@
         const profanityFilterToggle = document.getElementById('profanity-filter-toggle');
         const muteRoleSelect = document.getElementById('mute-role-select');
         const welcomeChannelSelect = document.getElementById('welcome-channel-select');
-
+        
+        // Chart elements
+        const memberGrowthChartCanvas = document.getElementById('member-growth-chart');
+        const messageActivityChartCanvas = document.getElementById('message-activity-chart');
+        let memberGrowthChart;
+        let messageActivityChart;
+        let unsubscribeDashboard;
+        let unsubscribeActivity;
+        let unsubscribeAnalytics;
+        let unsubscribeSettings;
 
         // --- UI Functions ---
         // Function to show a specific page and hide others
@@ -403,21 +463,134 @@
             hideModal();
         });
 
+        // --- Chart Functions ---
+        // Function to initialize and update the Member Growth Chart
+        function createMemberGrowthChart(data) {
+            const labels = data.map(item => item.date);
+            const values = data.map(item => item.newMembers);
+
+            const chartConfig = {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'New Members',
+                        data: values,
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)', // blue-500 with opacity
+                        borderColor: 'rgba(59, 130, 246, 1)', // blue-500
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#cbd5e1' // slate-300
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#475569' }, // slate-600
+                            ticks: { color: '#cbd5e1' } // slate-300
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#475569' },
+                            ticks: { color: '#cbd5e1' }
+                        }
+                    }
+                }
+            };
+            
+            if (memberGrowthChart) {
+                memberGrowthChart.data = chartConfig.data;
+                memberGrowthChart.update();
+            } else {
+                memberGrowthChart = new Chart(memberGrowthChartCanvas, chartConfig);
+            }
+        }
+        
+        // Function to initialize and update the Message Activity Chart
+        function createMessageActivityChart(data) {
+            const labels = data.map(item => item.date);
+            const values = data.map(item => item.messages);
+
+            const chartConfig = {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Messages Sent',
+                        data: values,
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)', // emerald-500 with opacity
+                        borderColor: 'rgba(16, 185, 129, 1)', // emerald-500
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#cbd5e1'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#475569' },
+                            ticks: { color: '#cbd5e1' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#475569' },
+                            ticks: { color: '#cbd5e1' }
+                        }
+                    }
+                }
+            };
+            
+            if (messageActivityChart) {
+                messageActivityChart.data = chartConfig.data;
+                messageActivityChart.update();
+            } else {
+                messageActivityChart = new Chart(messageActivityChartCanvas, chartConfig);
+            }
+        }
+
         // --- Firebase Functions ---
-        async function setupFirebaseListeners(currentUserId) {
-            // Set the userId for display
-            userIdDisplay.textContent = `User ID: ${currentUserId}`;
+        
+        // Unsubscribe from all previous listeners to prevent memory leaks
+        function unsubscribeAllListeners() {
+            if (unsubscribeDashboard) unsubscribeDashboard();
+            if (unsubscribeActivity) unsubscribeActivity();
+            if (unsubscribeAnalytics) unsubscribeAnalytics();
+            if (unsubscribeSettings) unsubscribeSettings();
+        }
+
+        // Sets up listeners for a specific server
+        async function refreshDashboardData(currentServerId, currentUserId) {
+            console.log(`Refreshing dashboard for server ID: ${currentServerId}`);
+
+            // Unsubscribe from previous server's data
+            unsubscribeAllListeners();
 
             // --- Dashboard Data Listener ---
-            const dashboardDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'dashboard-stats', 'server-metrics');
-            onSnapshot(dashboardDocRef, (docSnap) => {
+            const dashboardDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'dashboard-stats', currentServerId);
+            unsubscribeDashboard = onSnapshot(dashboardDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     totalMembersCount.textContent = data.totalMembers.toLocaleString();
                     messagesCount.textContent = data.messagesSent.toLocaleString();
                     newMembersCount.textContent = data.newMembers.toLocaleString();
                 } else {
-                    console.log("No dashboard stats found. Creating a new one.");
+                    console.log("No dashboard stats found for this server. Creating a new one.");
                     setDoc(dashboardDocRef, {
                         totalMembers: 1234,
                         messagesSent: 56789,
@@ -429,15 +602,18 @@
             });
 
             // --- Recent Activity Listener ---
-            const activityCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'recent-activity');
-            const activityQuery = query(activityCollectionRef, orderBy("timestamp", "desc"), limit(5));
+            const activityCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'recent-activity', currentServerId, 'logs');
+            const activityQuery = query(activityCollectionRef, limit(5));
 
-            onSnapshot(activityQuery, (querySnapshot) => {
+            unsubscribeActivity = onSnapshot(activityQuery, (querySnapshot) => {
                 recentActivityList.innerHTML = ''; // Clear the list
                 if (querySnapshot.empty) {
-                    recentActivityList.innerHTML = `<li class="text-slate-400">No recent activity.</li>`;
+                    recentActivityList.innerHTML = `<li class="text-slate-400">No recent activity for this server.</li>`;
                 } else {
-                    querySnapshot.forEach((doc) => {
+                    // Sorting the data manually in memory since orderBy can cause issues
+                    const sortedDocs = querySnapshot.docs.sort((a, b) => b.data().timestamp.seconds - a.data().timestamp.seconds);
+                    
+                    sortedDocs.forEach((doc) => {
                         const activity = doc.data();
                         const li = document.createElement('li');
                         li.className = 'flex items-center space-x-3';
@@ -458,9 +634,10 @@
             });
 
 
-            // --- User Settings Listener ---
-            const userSettingsDocRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'settings', 'user-preferences');
-            onSnapshot(userSettingsDocRef, (docSnap) => {
+            // --- User Settings Listener (Bot Configuration) ---
+            // Note: Settings are per-user, but associated with a server
+            const userSettingsDocRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'server-settings', currentServerId);
+            unsubscribeSettings = onSnapshot(userSettingsDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const settings = docSnap.data();
                     botPrefixInput.value = settings.botPrefix || '!';
@@ -469,7 +646,7 @@
                     muteRoleSelect.value = settings.muteRole || '@Muted';
                     welcomeChannelSelect.value = settings.welcomeChannel || '#general';
                 } else {
-                    console.log("No user settings found. Creating a new one.");
+                    console.log("No user settings found for this server. Creating a new one.");
                     setDoc(userSettingsDocRef, {
                         botPrefix: '!',
                         welcomeMessagesEnabled: false,
@@ -493,20 +670,47 @@
                 }
             };
             
-            savePrefixButton.addEventListener('click', () => {
-                saveSettings('botPrefix', botPrefixInput.value);
-            });
-            welcomeMessageToggle.addEventListener('change', (e) => {
-                saveSettings('welcomeMessagesEnabled', e.target.checked);
-            });
-            profanityFilterToggle.addEventListener('change', (e) => {
-                saveSettings('profanityFilterEnabled', e.target.checked);
-            });
-            muteRoleSelect.addEventListener('change', (e) => {
-                saveSettings('muteRole', e.target.value);
-            });
-            welcomeChannelSelect.addEventListener('change', (e) => {
-                saveSettings('welcomeChannel', e.target.value);
+            savePrefixButton.onclick = () => saveSettings('botPrefix', botPrefixInput.value);
+            welcomeMessageToggle.onchange = (e) => saveSettings('welcomeMessagesEnabled', e.target.checked);
+            profanityFilterToggle.onchange = (e) => saveSettings('profanityFilterEnabled', e.target.checked);
+            muteRoleSelect.onchange = (e) => saveSettings('muteRole', e.target.value);
+            welcomeChannelSelect.onchange = (e) => saveSettings('welcomeChannel', e.target.value);
+
+            // --- Analytics Data Listener ---
+            const analyticsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'analytics-data', currentServerId);
+            unsubscribeAnalytics = onSnapshot(analyticsDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    // Update charts with new data
+                    createMemberGrowthChart(data.memberGrowth);
+                    createMessageActivityChart(data.messageActivity);
+                } else {
+                    console.log("No analytics data found for this server. Creating mock data.");
+                    const mockMemberGrowth = [
+                        { date: 'Day 1', newMembers: 5 },
+                        { date: 'Day 2', newMembers: 12 },
+                        { date: 'Day 3', newMembers: 8 },
+                        { date: 'Day 4', newMembers: 15 },
+                        { date: 'Day 5', newMembers: 20 },
+                        { date: 'Day 6', newMembers: 11 },
+                        { date: 'Day 7', newMembers: 25 }
+                    ];
+                    const mockMessageActivity = [
+                        { date: 'Day 1', messages: 1500 },
+                        { date: 'Day 2', messages: 2100 },
+                        { date: 'Day 3', messages: 1850 },
+                        { date: 'Day 4', messages: 3200 },
+                        { date: 'Day 5', messages: 2900 },
+                        { date: 'Day 6', messages: 1700 },
+                        { date: 'Day 7', messages: 3500 }
+                    ];
+                    setDoc(analyticsDocRef, {
+                        memberGrowth: mockMemberGrowth,
+                        messageActivity: mockMessageActivity
+                    });
+                }
+            }, (error) => {
+                console.error("Error fetching analytics data:", error);
             });
         }
         
@@ -516,8 +720,43 @@
                 if (user) {
                     userId = user.uid;
                     console.log("User authenticated:", userId);
-                    // Setup listeners only after successful authentication
-                    setupFirebaseListeners(userId);
+                    userIdDisplay.textContent = `User ID: ${userId}`;
+
+                    // Fetch server list and populate the dropdown
+                    const guildsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'guilds');
+                    const unsubscribeGuilds = onSnapshot(guildsCollectionRef, (querySnapshot) => {
+                        serverSelect.innerHTML = ''; // Clear existing options
+                        const guilds = [];
+                        if (!querySnapshot.empty) {
+                            querySnapshot.forEach(doc => {
+                                const guild = doc.data();
+                                guilds.push({ id: doc.id, name: guild.name });
+                                const option = document.createElement('option');
+                                option.value = doc.id;
+                                option.textContent = guild.name;
+                                serverSelect.appendChild(option);
+                            });
+                            // If servers are found, select the first one by default and refresh the dashboard
+                            if (guilds.length > 0) {
+                                selectedServerId = guilds[0].id;
+                                refreshDashboardData(selectedServerId, userId);
+                            }
+                        } else {
+                            console.log("No guilds found. Creating mock data.");
+                            // Create mock guilds if the collection is empty
+                            const mockGuilds = [
+                                { name: "PFNexus Community", id: "server_001" },
+                                { name: "Bot Testing Server", id: "server_002" },
+                                { name: "The Dev Lounge", id: "server_003" }
+                            ];
+                            mockGuilds.forEach(guild => {
+                                setDoc(doc(guildsCollectionRef, guild.id), { name: guild.name });
+                            });
+                        }
+                    }, (error) => {
+                        console.error("Error fetching guilds:", error);
+                    });
+                    
                 } else {
                     try {
                         let credential;
@@ -528,11 +767,54 @@
                         }
                         userId = credential.user.uid;
                         console.log("Signed in successfully with token/anonymously:", userId);
-                        setupFirebaseListeners(userId);
+                        userIdDisplay.textContent = `User ID: ${userId}`;
+                        // Fetch server list after sign-in
+                        const guildsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'guilds');
+                        onSnapshot(guildsCollectionRef, (querySnapshot) => {
+                             serverSelect.innerHTML = '';
+                             const guilds = [];
+                             if (!querySnapshot.empty) {
+                                 querySnapshot.forEach(doc => {
+                                     const guild = doc.data();
+                                     guilds.push({ id: doc.id, name: guild.name });
+                                     const option = document.createElement('option');
+                                     option.value = doc.id;
+                                     option.textContent = guild.name;
+                                     serverSelect.appendChild(option);
+                                 });
+                                 if (guilds.length > 0) {
+                                     selectedServerId = guilds[0].id;
+                                     refreshDashboardData(selectedServerId, userId);
+                                 }
+                             } else {
+                                console.log("No guilds found. Creating mock data.");
+                                 const mockGuilds = [
+                                     { name: "PFNexus Community", id: "server_001" },
+                                     { name: "Bot Testing Server", id: "server_002" },
+                                     { name: "The Dev Lounge", id: "server_003" }
+                                 ];
+                                 mockGuilds.forEach(guild => {
+                                     setDoc(doc(guildsCollectionRef, guild.id), { name: guild.name });
+                                 });
+                             }
+                        }, (error) => {
+                            console.error("Error fetching guilds:", error);
+                        });
                     } catch (error) {
                         console.error("Firebase Auth failed:", error);
                         showModal("Authentication Error", `There was a problem signing in. Please try again. Error: ${error.message}`);
                     }
+                }
+            });
+
+            // Add change event listener to the server select dropdown
+            serverSelect.addEventListener('change', (event) => {
+                selectedServerId = event.target.value;
+                refreshDashboardData(selectedServerId, userId);
+                // Also close the sidebar on mobile after selecting a server
+                if (window.innerWidth < 768) {
+                    sidebar.classList.remove('translate-x-0');
+                    sidebar.classList.add('-translate-x-full');
                 }
             });
             
