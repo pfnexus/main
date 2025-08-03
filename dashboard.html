@@ -1,845 +1,352 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PFNexus Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Tailwind CSS is loaded from a CDN -->
+    <title>PFNexus Dashboard</title>
+    <!-- Tailwind CSS from CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Use Inter font for a clean, modern look -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Use Phosphor Icons for a stylish icon set -->
-    <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/dist/phosphor-icons.js"></script>
-    <!-- Chart.js for creating interactive charts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <style>
-        /* Define custom styles for a smooth appearance */
-        :root {
-            --bg-dark: #0f172a;
-            --bg-card: #1e293b;
-            --text-light: #f1f5f9;
-            --accent-primary: #3b82f6;
-            --accent-hover: #2563eb;
-            --border-color: #475569;
-        }
-
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-light);
         }
-
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
+        .profile-card, .config-card, .guild-select-card {
+            animation: fadeIn 0.5s ease-out;
         }
-
-        .scrollbar-hide {
-            -ms-overflow-style: none; /* IE and Edge */
-            scrollbar-width: none; /* Firefox */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        
-        /* Sidebar custom animation and positioning */
-        #sidebar {
-            transition: transform 0.3s ease-in-out;
+        .select-wrapper {
+            position: relative;
         }
-        
-        @media (max-width: 768px) {
-            #sidebar.translate-x-0 {
-                transform: translateX(0);
-            }
-            #sidebar.-translate-x-full {
-                transform: translateX(-100%);
-            }
-        }
-
-        /* Custom styles for sidebar links */
-        .sidebar-link {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
+        .select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            top: 50%;
+            right: 1rem;
+            transform: translateY(-50%);
+            pointer-events: none;
             color: #94a3b8;
-            transition: all 0.2s ease-in-out;
-        }
-
-        .sidebar-link:hover {
-            background-color: #334155;
-            color: #e2e8f0;
-        }
-
-        .sidebar-link.bg-slate-700 {
-            color: #fff;
-        }
-
-        .sidebar-link span {
-            margin-left: 1rem;
-            font-weight: 500;
         }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden">
+<body class="bg-slate-950 text-white flex flex-col items-center min-h-screen p-6">
 
-    <!-- Sidebar -->
-    <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-700 flex flex-col p-4 shadow-xl z-20 md:translate-x-0 fixed md:static h-full -translate-x-full">
-        <!-- Logo and Title -->
-        <div class="flex items-center space-x-3 mb-8">
-            <svg class="h-8 w-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 012 2v1h-4V6a2 2 0 012-2zM4 11h16M4 15h16M4 19h16M15 4h-4V6h4V4zM7 6h4V4H7v2zM4 11V6h16v5H4zm0 4v-4h16v4H4zm0 4v-4h16v4H4z"></path>
-            </svg>
-            <h1 class="text-xl font-bold text-slate-100">PFNexus</h1>
-        </div>
-        
-        <!-- Server Management Section -->
-        <div class="mb-4">
-            <h3 class="text-sm font-semibold text-slate-400 mb-2">Server Management</h3>
-            <select id="server-select" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors">
-                <!-- Server options will be dynamically added here -->
-            </select>
+    <h1 class="text-4xl font-bold mb-8 text-cyan-400">PFNexus Dashboard</h1>
+
+    <!-- Main Dashboard Content -->
+    <div id="dashboard-content" class="w-full max-w-lg">
+        <!-- User Profile Card -->
+        <div id="profile-card" class="bg-slate-800 p-8 rounded-xl shadow-lg border border-slate-700 w-full mb-8 profile-card">
+            <div class="flex flex-col items-center">
+                <img id="avatar" class="w-24 h-24 rounded-full mb-4 border-2 border-cyan-400 object-cover" src="https://placehold.co/100x100/1f2937/a3a3a3?text=?" alt="User Avatar">
+                <h2 id="username" class="text-2xl font-bold mb-1">User</h2>
+                <p id="user-id" class="text-slate-400 text-sm">ID: loading...</p>
+                <button id="logout-btn" class="mt-6 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition-all duration-300 transform hover:scale-105">
+                    Logout
+                </button>
+            </div>
         </div>
 
-        <!-- Navigation Menu -->
-        <nav class="flex-grow">
-            <ul class="space-y-2">
-                <li>
-                    <a href="#dashboard" class="sidebar-link group" data-page="dashboard">
-                        <i class="ph ph-chart-line-up text-lg group-hover:text-white"></i>
-                        <span>Dashboard</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#general-settings" class="sidebar-link group" data-page="general-settings">
-                        <i class="ph ph-gear-six text-lg group-hover:text-white"></i>
-                        <span>General Settings</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#moderation" class="sidebar-link group" data-page="moderation">
-                        <i class="ph ph-gavel text-lg group-hover:text-white"></i>
-                        <span>Moderation</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#announcements" class="sidebar-link group" data-page="announcements">
-                        <i class="ph ph-megaphone text-lg group-hover:text-white"></i>
-                        <span>Announcements</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#analytics" class="sidebar-link group" data-page="analytics">
-                        <i class="ph ph-chart-bar text-lg group-hover:text-white"></i>
-                        <span>Analytics</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-        <!-- User Profile/Info -->
-        <div class="mt-8">
-            <div class="flex flex-col space-y-2 p-2 bg-slate-800 rounded-lg">
-                <div class="flex items-center space-x-3">
-                    <img src="https://placehold.co/40x40/0d0d0d/white?text=U" alt="User Avatar" class="h-10 w-10 rounded-full border border-slate-700">
-                    <div>
-                        <p class="text-sm font-semibold">Current User</p>
-                        <p class="text-xs text-slate-400">#0000</p>
-                    </div>
+        <!-- Guild Selection Card -->
+        <div class="bg-slate-800 p-8 rounded-xl shadow-lg border border-slate-700 w-full mb-8 guild-select-card">
+            <h2 class="text-2xl font-bold mb-6 text-center text-cyan-400">Select Server</h2>
+            <div id="guild-select-area" class="space-y-4">
+                <div class="select-wrapper">
+                    <select id="guild-select" class="mt-1 block w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-white appearance-none">
+                        <option value="">-- Please select a server --</option>
+                    </select>
                 </div>
-                <!-- Display the full User ID here for multi-user apps -->
-                <p class="text-xs text-slate-500 break-all" id="user-id-display">Loading User ID...</p>
             </div>
-            <button id="logout-button" class="mt-4 w-full p-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-medium transition-colors">
-                Logout
-            </button>
         </div>
-    </aside>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col bg-slate-900 overflow-hidden">
-        <!-- Top Bar for Mobile -->
-        <header class="bg-slate-900 shadow-md p-4 flex items-center justify-between md:hidden">
-            <h1 class="text-xl font-bold">PFNexus Dashboard</h1>
-            <button id="menu-button" class="text-slate-400 focus:outline-none">
-                <i class="ph ph-list text-2xl"></i>
-            </button>
-        </header>
-
-        <!-- Dynamic Content Section -->
-        <section id="content-container" class="flex-1 overflow-y-auto p-6 scrollbar-hide">
-            <!-- Dashboard Content -->
-            <div id="dashboard-page" class="page-content" style="display: block;">
-                <h2 class="text-3xl font-extrabold mb-6 text-slate-100">Server Overview</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Stat Card 1 -->
-                    <div class="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 hover:border-blue-500 transition-colors">
-                        <div class="flex items-center space-x-4">
-                            <div class="p-3 bg-blue-500 rounded-full text-white">
-                                <i class="ph ph-users text-2xl"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-slate-400">Total Members</p>
-                                <p class="text-2xl font-bold" id="total-members-count">...</p>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Stat Card 2 -->
-                    <div class="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 hover:border-blue-500 transition-colors">
-                        <div class="flex items-center space-x-4">
-                            <div class="p-3 bg-green-500 rounded-full text-white">
-                                <i class="ph ph-chat-circle text-2xl"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-slate-400">Messages Sent (24h)</p>
-                                <p class="text-2xl font-bold" id="messages-count">...</p>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Stat Card 3 -->
-                    <div class="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 hover:border-blue-500 transition-colors">
-                        <div class="flex items-center space-x-4">
-                            <div class="p-3 bg-purple-500 rounded-full text-white">
-                                <i class="ph ph-user-plus text-2xl"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-slate-400">New Members (7d)</p>
-                                <p class="text-2xl font-bold" id="new-members-count">...</p>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Server Configuration Card -->
+        <div id="config-card" class="bg-slate-800 p-8 rounded-xl shadow-lg border border-slate-700 w-full config-card hidden">
+            <h2 class="text-2xl font-bold mb-6 text-center text-cyan-400">Server Configuration</h2>
+            <div id="message-area" class="p-3 mb-4 text-sm text-center rounded-lg hidden"></div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label for="welcomeMessage" class="block text-sm font-medium text-slate-300">Welcome Message</label>
+                    <textarea
+                        id="welcomeMessage"
+                        name="welcomeMessage"
+                        rows="3"
+                        class="mt-1 block w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-white"
+                        placeholder="Welcome to the server, {user}!"
+                    ></textarea>
                 </div>
-                <!-- Recent Activity Section -->
-                <div class="mt-8 bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700">
-                    <h3 class="text-xl font-bold mb-4">Recent Activity</h3>
-                    <ul id="recent-activity-list" class="space-y-4">
-                        <li class="text-slate-400">Loading recent activity...</li>
-                    </ul>
+                <div>
+                    <label for="welcomeChannelId" class="block text-sm font-medium text-slate-300">Welcome Channel ID</label>
+                    <input
+                        type="text"
+                        id="welcomeChannelId"
+                        name="welcomeChannelId"
+                        class="mt-1 block w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-white"
+                        placeholder="Enter channel ID"
+                    >
+                </div>
+                <div>
+                    <label for="customPrefix" class="block text-sm font-medium text-slate-300">Custom Prefix</label>
+                    <input
+                        type="text"
+                        id="customPrefix"
+                        name="customPrefix"
+                        class="mt-1 block w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-white"
+                        placeholder="!"
+                    >
                 </div>
             </div>
-
-            <!-- General Settings Content -->
-            <div id="general-settings-page" class="page-content" style="display: none;">
-                <h2 class="text-3xl font-extrabold mb-6 text-slate-100">General Settings</h2>
-                <div class="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 space-y-6">
-                    <!-- Feature Card 1: Bot Prefix -->
-                    <div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-700/50 rounded-lg">
-                        <div>
-                            <h3 class="text-lg font-semibold">Bot Prefix</h3>
-                            <p class="text-sm text-slate-400">Change the command prefix for the bot.</p>
-                        </div>
-                        <div class="mt-4 md:mt-0 flex items-center space-x-2">
-                            <input type="text" id="bot-prefix-input" class="bg-slate-900 border border-slate-600 rounded-md p-2 text-slate-100 focus:outline-none focus:border-blue-500" value="!">
-                            <button id="save-prefix-button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
-                                Save
-                            </button>
-                        </div>
-                    </div>
-                    <!-- Feature Card 2: Welcome Messages -->
-                    <div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-700/50 rounded-lg">
-                        <div>
-                            <h3 class="text-lg font-semibold">Welcome Messages</h3>
-                            <p class="text-sm text-slate-400">Send a customizable message when a new user joins.</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer mt-4 md:mt-0">
-                            <input type="checkbox" id="welcome-message-toggle" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-slate-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Moderation Content -->
-            <div id="moderation-page" class="page-content" style="display: none;">
-                <h2 class="text-3xl font-extrabold mb-6 text-slate-100">Moderation Settings</h2>
-                <div class="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 space-y-6">
-                    <!-- Feature Card 1: Profanity Filter -->
-                    <div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-700/50 rounded-lg">
-                        <div>
-                            <h3 class="text-lg font-semibold">Profanity Filter</h3>
-                            <p class="text-sm text-slate-400">Automatically delete messages containing profanity.</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer mt-4 md:mt-0">
-                            <input type="checkbox" id="profanity-filter-toggle" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-slate-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                    </div>
-                    <!-- Feature Card 2: Mute Role -->
-                    <div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-700/50 rounded-lg">
-                        <div>
-                            <h3 class="text-lg font-semibold">Mute Role</h3>
-                            <p class="text-sm text-slate-400">Select a role to be applied when a user is muted.</p>
-                        </div>
-                        <div class="mt-4 md:mt-0">
-                            <select id="mute-role-select" class="bg-slate-900 border border-slate-600 rounded-md p-2 text-slate-100 focus:outline-none focus:border-blue-500">
-                                <option>@Muted</option>
-                                <option>@Silence</option>
-                                <option>@Jailed</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Announcements Content -->
-            <div id="announcements-page" class="page-content" style="display: none;">
-                <h2 class="text-3xl font-extrabold mb-6 text-slate-100">Announcements</h2>
-                <div class="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 space-y-6">
-                    <!-- Feature Card 1: New Member Announcement -->
-                    <div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-700/50 rounded-lg">
-                        <div>
-                            <h3 class="text-lg font-semibold">New Member Announcement</h3>
-                            <p class="text-sm text-slate-400">Send a greeting in a specific channel when a new user joins.</p>
-                        </div>
-                        <div class="mt-4 md:mt-0">
-                            <select id="welcome-channel-select" class="bg-slate-900 border border-slate-600 rounded-md p-2 text-slate-100 focus:outline-none focus:border-blue-500">
-                                <option>#general</option>
-                                <option>#welcome</option>
-                                <option>#introductions</option>
-                            </select>
-                        </div>
-                    </div>
-                    <!-- Feature Card 2: Scheduled Messages -->
-                    <div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-700/50 rounded-lg">
-                        <div>
-                            <h3 class="text-lg font-semibold">Scheduled Messages</h3>
-                            <p class="text-sm text-slate-400">Send a message at a specific time and date.</p>
-                        </div>
-                        <div class="mt-4 md:mt-0">
-                            <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
-                                <i class="ph ph-plus-circle mr-2"></i> Create Schedule
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Analytics Content -->
-            <div id="analytics-page" class="page-content" style="display: none;">
-                <h2 class="text-3xl font-extrabold mb-6 text-slate-100">Analytics</h2>
-                <div class="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 space-y-6">
-                    <p class="text-slate-400">This section provides a visual overview of your server's activity and member growth.</p>
-                    
-                    <!-- Analytics Card 1: Member Growth -->
-                    <div class="bg-slate-700/50 p-4 rounded-lg">
-                        <h3 class="text-lg font-semibold mb-2">Member Growth</h3>
-                        <p class="text-sm text-slate-400 mb-4">See how many new members have joined your server over the last 7 days.</p>
-                        <canvas id="member-growth-chart" class="w-full h-80"></canvas>
-                    </div>
-                    
-                    <!-- Analytics Card 2: Message Activity -->
-                    <div class="bg-slate-700/50 p-4 rounded-lg">
-                        <h3 class="text-lg font-semibold mb-2">Message Activity</h3>
-                        <p class="text-sm text-slate-400 mb-4">Visualize message counts per day to identify peak activity times.</p>
-                        <canvas id="message-activity-chart" class="w-full h-80"></canvas>
-                    </div>
-                </div>
-            </div>
-
-        </section>
-    </main>
-    
-    <!-- Modal for confirmation/alerts -->
-    <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden flex items-center justify-center">
-        <div id="modal-box" class="bg-slate-800 p-8 rounded-xl shadow-lg border border-slate-700 w-11/12 max-w-md animate-fade-in-up">
-            <h3 id="modal-title" class="text-xl font-bold mb-4"></h3>
-            <p id="modal-message" class="text-slate-300 mb-6"></p>
-            <div class="flex justify-end space-x-3">
-                <button id="modal-cancel" class="px-4 py-2 rounded-md bg-slate-600 hover:bg-slate-700 text-white">Cancel</button>
-                <button id="modal-confirm" class="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white">Confirm Logout</button>
+            
+            <div class="mt-6 text-center">
+                <button
+                    id="save-btn"
+                    class="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-bold transition-all duration-300 transform hover:scale-105"
+                >
+                    Save Server Configuration
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs from CDN -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, collection, query, limit, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // IMPORTANT: These values are hardcoded from the file you provided.
-        const firebaseConfig = {
-            apiKey: "AIzaSyDJALzpNuicRVFVw3Pp5w1kXgcNx9kiVqI",
-            authDomain: "nexusdashboard-75b4f.firebaseapp.com",
-            projectId: "nexusdashboard-75b4f",
-            storageBucket: "nexusdashboard-75b4f.firebasestorage.app",
-            messagingSenderId: "897535985515",
-            appId: "1:897535985515:web:aa79b5aef198dc3f25ae2e",
-            measurementId: "G-6KMPQ8TDGE"
-        };
-        const appId = firebaseConfig.appId;
-        const initialAuthToken = null; // Since we are hardcoding, we'll use anonymous sign-in for this example.
-        
+        // Global variables for Firebase services
+        let app;
         let db;
         let auth;
-        let userId;
-        let selectedServerId = null;
+        let discordUser = null;
+        let appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        let unsubscribeConfig = null; // To store the onSnapshot listener function for cleanup
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-        
-        // --- DOM Elements ---
-        const sidebar = document.getElementById('sidebar');
-        const menuButton = document.getElementById('menu-button');
-        const sidebarLinks = document.querySelectorAll('.sidebar-link');
-        const contentPages = document.querySelectorAll('.page-content');
-        const logoutButton = document.getElementById('logout-button');
-        const modalBackdrop = document.getElementById('modal-backdrop');
-        const modalTitle = document.getElementById('modal-title');
-        const modalMessage = document.getElementById('modal-message');
-        const modalCancelButton = document.getElementById('modal-cancel');
-        const modalConfirmButton = document.getElementById('modal-confirm');
-        const userIdDisplay = document.getElementById('user-id-display');
-        const serverSelect = document.getElementById('server-select');
-        
-        // Dashboard Stats
-        const totalMembersCount = document.getElementById('total-members-count');
-        const messagesCount = document.getElementById('messages-count');
-        const newMembersCount = document.getElementById('new-members-count');
-        const recentActivityList = document.getElementById('recent-activity-list');
+        // Get DOM elements
+        const profileCard = document.getElementById('profile-card');
+        const usernameElem = document.getElementById('username');
+        const userIdElem = document.getElementById('user-id');
+        const avatarElem = document.getElementById('avatar');
+        const logoutBtn = document.getElementById('logout-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const guildSelect = document.getElementById('guild-select');
+        const configCard = document.getElementById('config-card');
+        const messageArea = document.getElementById('message-area');
 
-        // Settings Inputs
-        const botPrefixInput = document.getElementById('bot-prefix-input');
-        const welcomeMessageToggle = document.getElementById('welcome-message-toggle');
-        const savePrefixButton = document.getElementById('save-prefix-button');
-        const profanityFilterToggle = document.getElementById('profanity-filter-toggle');
-        const muteRoleSelect = document.getElementById('mute-role-select');
-        const welcomeChannelSelect = document.getElementById('welcome-channel-select');
-        
-        // Chart elements
-        const memberGrowthChartCanvas = document.getElementById('member-growth-chart');
-        const messageActivityChartCanvas = document.getElementById('message-activity-chart');
-        let memberGrowthChart;
-        let messageActivityChart;
-        let unsubscribeDashboard;
-        let unsubscribeActivity;
-        let unsubscribeAnalytics;
-        let unsubscribeSettings;
+        const welcomeMessageInput = document.getElementById('welcomeMessage');
+        const welcomeChannelIdInput = document.getElementById('welcomeChannelId');
+        const customPrefixInput = document.getElementById('customPrefix');
 
-        // --- UI Functions ---
-        // Function to show a specific page and hide others
-        function showPage(pageId) {
-            contentPages.forEach(page => {
-                page.style.display = 'none';
-            });
-            document.getElementById(pageId).style.display = 'block';
-
-            // Update active link styling
-            sidebarLinks.forEach(link => {
-                link.classList.remove('bg-slate-700');
-            });
-            const activeLink = document.querySelector(`[data-page="${pageId.replace('-page', '')}"]`);
-            if (activeLink) {
-                activeLink.classList.add('bg-slate-700');
-            }
-        }
-
-        // Toggle mobile sidebar visibility
-        menuButton.addEventListener('click', () => {
-            sidebar.classList.toggle('-translate-x-full');
-            sidebar.classList.toggle('translate-x-0');
-        });
-
-        // Function to display the custom modal
-        function showModal(title, message) {
-            modalTitle.textContent = title;
-            modalMessage.textContent = message;
-            modalBackdrop.classList.remove('hidden');
-        }
-
-        // Function to hide the custom modal
-        function hideModal() {
-            modalBackdrop.classList.add('hidden');
-        }
-
-        // Add event listeners for modal buttons
-        modalCancelButton.addEventListener('click', hideModal);
-        modalConfirmButton.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-                console.log("User logged out successfully.");
-                window.location.reload(); // Reload the page to reset the app state
-            } catch (error) {
-                console.error("Logout failed:", error);
-                showModal("Logout Failed", `There was an error logging out. Please try again. Error: ${error.message}`);
-            }
-            hideModal();
-        });
-
-        // --- Chart Functions ---
-        // Function to initialize and update the Member Growth Chart
-        function createMemberGrowthChart(data) {
-            const labels = data.map(item => item.date);
-            const values = data.map(item => item.newMembers);
-
-            const chartConfig = {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'New Members',
-                        data: values,
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)', // blue-500 with opacity
-                        borderColor: 'rgba(59, 130, 246, 1)', // blue-500
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#cbd5e1' // slate-300
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: { color: '#475569' }, // slate-600
-                            ticks: { color: '#cbd5e1' } // slate-300
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: '#475569' },
-                            ticks: { color: '#cbd5e1' }
-                        }
-                    }
-                }
+        // Firebase configuration. Use the provided global variable if it exists.
+        const firebaseConfig = typeof __firebase_config !== 'undefined'
+            ? JSON.parse(__firebase_config)
+            : {
+                apiKey: "YOUR_API_KEY", // Placeholder
+                authDomain: "YOUR_AUTH_DOMAIN", // Placeholder
+                projectId: "YOUR_PROJECT_ID", // Placeholder
+                storageBucket: "YOUR_STORAGE_BUCKET", // Placeholder
+                messagingSenderId: "YOUR_MESSAGING_SENDER_ID", // Placeholder
+                appId: "YOUR_APP_ID", // Placeholder
+                measurementId: "YOUR_MEASUREMENT_ID" // Placeholder
             };
-            
-            if (memberGrowthChart) {
-                memberGrowthChart.data = chartConfig.data;
-                memberGrowthChart.update();
-            } else {
-                memberGrowthChart = new Chart(memberGrowthChartCanvas, chartConfig);
-            }
-        }
-        
-        // Function to initialize and update the Message Activity Chart
-        function createMessageActivityChart(data) {
-            const labels = data.map(item => item.date);
-            const values = data.map(item => item.messages);
 
-            const chartConfig = {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Messages Sent',
-                        data: values,
-                        backgroundColor: 'rgba(16, 185, 129, 0.7)', // emerald-500 with opacity
-                        borderColor: 'rgba(16, 185, 129, 1)', // emerald-500
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#cbd5e1'
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: { color: '#475569' },
-                            ticks: { color: '#cbd5e1' }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: '#475569' },
-                            ticks: { color: '#cbd5e1' }
-                        }
-                    }
-                }
-            };
-            
-            if (messageActivityChart) {
-                messageActivityChart.data = chartConfig.data;
-                messageActivityChart.update();
-            } else {
-                messageActivityChart = new Chart(messageActivityChartCanvas, chartConfig);
-            }
-        }
+        // Custom auth token. Use the provided global variable if it exists.
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        let currentUserId = null;
 
-        // --- Firebase Functions ---
-        
-        // Unsubscribe from all previous listeners to prevent memory leaks
-        function unsubscribeAllListeners() {
-            if (unsubscribeDashboard) unsubscribeDashboard();
-            if (unsubscribeActivity) unsubscribeActivity();
-            if (unsubscribeAnalytics) unsubscribeAnalytics();
-            if (unsubscribeSettings) unsubscribeSettings();
-        }
-
-        // Sets up listeners for a specific server
-        async function refreshDashboardData(currentServerId, currentUserId) {
-            console.log(`Refreshing dashboard for server ID: ${currentServerId}`);
-
-            // Unsubscribe from previous server's data
-            unsubscribeAllListeners();
-
-            // --- Dashboard Data Listener ---
-            const dashboardDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'dashboard-stats', currentServerId);
-            unsubscribeDashboard = onSnapshot(dashboardDocRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    totalMembersCount.textContent = data.totalMembers.toLocaleString();
-                    messagesCount.textContent = data.messagesSent.toLocaleString();
-                    newMembersCount.textContent = data.newMembers.toLocaleString();
-                } else {
-                    console.log("No dashboard stats found for this server. Creating a new one.");
-                    setDoc(dashboardDocRef, {
-                        totalMembers: 1234,
-                        messagesSent: 56789,
-                        newMembers: 128
-                    });
-                }
-            }, (error) => {
-                console.error("Error fetching dashboard stats:", error);
-            });
-
-            // --- Recent Activity Listener ---
-            const activityCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'recent-activity', currentServerId, 'logs');
-            const activityQuery = query(activityCollectionRef, limit(5));
-
-            unsubscribeActivity = onSnapshot(activityQuery, (querySnapshot) => {
-                recentActivityList.innerHTML = ''; // Clear the list
-                if (querySnapshot.empty) {
-                    recentActivityList.innerHTML = `<li class="text-slate-400">No recent activity for this server.</li>`;
-                } else {
-                    // Sorting the data manually in memory since orderBy can cause issues
-                    const sortedDocs = querySnapshot.docs.sort((a, b) => b.data().timestamp.seconds - a.data().timestamp.seconds);
-                    
-                    sortedDocs.forEach((doc) => {
-                        const activity = doc.data();
-                        const li = document.createElement('li');
-                        li.className = 'flex items-center space-x-3';
-                        const colorClass = activity.type === 'join' ? 'bg-blue-400' : activity.type === 'update' ? 'bg-green-400' : 'bg-yellow-400';
-                        const message = activity.message;
-                        const timestamp = new Date(activity.timestamp.seconds * 1000).toLocaleString();
-                        
-                        li.innerHTML = `
-                            <div class="w-2 h-2 ${colorClass} rounded-full"></div>
-                            <p class="text-sm"><span class="font-medium text-white">${message}</span></p>
-                            <span class="text-xs text-slate-400">${timestamp}</span>
-                        `;
-                        recentActivityList.appendChild(li);
-                    });
-                }
-            }, (error) => {
-                console.error("Error fetching recent activity:", error);
-            });
-
-
-            // --- User Settings Listener (Bot Configuration) ---
-            // Note: Settings are per-user, but associated with a server
-            const userSettingsDocRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'server-settings', currentServerId);
-            unsubscribeSettings = onSnapshot(userSettingsDocRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const settings = docSnap.data();
-                    botPrefixInput.value = settings.botPrefix || '!';
-                    welcomeMessageToggle.checked = settings.welcomeMessagesEnabled || false;
-                    profanityFilterToggle.checked = settings.profanityFilterEnabled || false;
-                    muteRoleSelect.value = settings.muteRole || '@Muted';
-                    welcomeChannelSelect.value = settings.welcomeChannel || '#general';
-                } else {
-                    console.log("No user settings found for this server. Creating a new one.");
-                    setDoc(userSettingsDocRef, {
-                        botPrefix: '!',
-                        welcomeMessagesEnabled: false,
-                        profanityFilterEnabled: true,
-                        muteRole: '@Muted',
-                        welcomeChannel: '#general'
-                    });
-                }
-            }, (error) => {
-                console.error("Error fetching user settings:", error);
-            });
-
-            // --- Event listeners for saving settings ---
-            const saveSettings = async (field, value) => {
-                try {
-                    await updateDoc(userSettingsDocRef, { [field]: value });
-                    console.log(`${field} saved successfully.`);
-                } catch (error) {
-                    console.error(`Error saving ${field}:`, error);
-                    showModal("Save Failed", `There was an issue saving your setting. Error: ${error.message}`);
-                }
-            };
-            
-            savePrefixButton.onclick = () => saveSettings('botPrefix', botPrefixInput.value);
-            welcomeMessageToggle.onchange = (e) => saveSettings('welcomeMessagesEnabled', e.target.checked);
-            profanityFilterToggle.onchange = (e) => saveSettings('profanityFilterEnabled', e.target.checked);
-            muteRoleSelect.onchange = (e) => saveSettings('muteRole', e.target.value);
-            welcomeChannelSelect.onchange = (e) => saveSettings('welcomeChannel', e.target.value);
-
-            // --- Analytics Data Listener ---
-            const analyticsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'analytics-data', currentServerId);
-            unsubscribeAnalytics = onSnapshot(analyticsDocRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    // Update charts with new data
-                    createMemberGrowthChart(data.memberGrowth);
-                    createMessageActivityChart(data.messageActivity);
-                } else {
-                    console.log("No analytics data found for this server. Creating mock data.");
-                    const mockMemberGrowth = [
-                        { date: 'Day 1', newMembers: 5 },
-                        { date: 'Day 2', newMembers: 12 },
-                        { date: 'Day 3', newMembers: 8 },
-                        { date: 'Day 4', newMembers: 15 },
-                        { date: 'Day 5', newMembers: 20 },
-                        { date: 'Day 6', newMembers: 11 },
-                        { date: 'Day 7', newMembers: 25 }
-                    ];
-                    const mockMessageActivity = [
-                        { date: 'Day 1', messages: 1500 },
-                        { date: 'Day 2', messages: 2100 },
-                        { date: 'Day 3', messages: 1850 },
-                        { date: 'Day 4', messages: 3200 },
-                        { date: 'Day 5', messages: 2900 },
-                        { date: 'Day 6', messages: 1700 },
-                        { date: 'Day 7', messages: 3500 }
-                    ];
-                    setDoc(analyticsDocRef, {
-                        memberGrowth: mockMemberGrowth,
-                        messageActivity: mockMessageActivity
-                    });
-                }
-            }, (error) => {
-                console.error("Error fetching analytics data:", error);
-            });
-        }
-        
-        // --- Main execution block on DOMContentLoaded ---
+        // Check for user ID in URL on page load
         document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            currentUserId = urlParams.get('userId');
+
+            if (!currentUserId) {
+                // If no user ID is in the URL, redirect back to the login page
+                showMessage('No user ID found. Redirecting to login.', 'error');
+                setTimeout(() => window.location.href = 'index.html', 2000);
+                return;
+            }
+
+            // Update the profile card with the user ID from the URL
+            usernameElem.textContent = `User`;
+            userIdElem.textContent = `ID: ${currentUserId}`;
+
+            // Initialize Firebase
+            try {
+                if (firebaseConfig && firebaseConfig.apiKey) {
+                    app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                    
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                        showMessage('Using anonymous authentication as no custom token was provided.', 'warning');
+                    }
+                } else {
+                    showMessage('Firebase config is missing or incomplete.', 'error');
+                }
+            } catch (e) {
+                showMessage('Failed to initialize Firebase: ' + e.message, 'error');
+                console.error('Firebase initialization error:', e);
+            }
+
+            // On successful auth, load the rest of the dashboard data
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    userId = user.uid;
-                    console.log("User authenticated:", userId);
-                    userIdDisplay.textContent = `User ID: ${userId}`;
-
-                    // Fetch server list and populate the dropdown
-                    const guildsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'guilds');
-                    const unsubscribeGuilds = onSnapshot(guildsCollectionRef, (querySnapshot) => {
-                        serverSelect.innerHTML = ''; // Clear existing options
-                        const guilds = [];
-                        if (!querySnapshot.empty) {
-                            querySnapshot.forEach(doc => {
-                                const guild = doc.data();
-                                guilds.push({ id: doc.id, name: guild.name });
-                                const option = document.createElement('option');
-                                option.value = doc.id;
-                                option.textContent = guild.name;
-                                serverSelect.appendChild(option);
-                            });
-                            // If servers are found, select the first one by default and refresh the dashboard
-                            if (guilds.length > 0) {
-                                selectedServerId = guilds[0].id;
-                                refreshDashboardData(selectedServerId, userId);
-                            }
-                        } else {
-                            console.log("No guilds found. Creating mock data.");
-                            // Create mock guilds if the collection is empty
-                            const mockGuilds = [
-                                { name: "PFNexus Community", id: "server_001" },
-                                { name: "Bot Testing Server", id: "server_002" },
-                                { name: "The Dev Lounge", id: "server_003" }
-                            ];
-                            mockGuilds.forEach(guild => {
-                                setDoc(doc(guildsCollectionRef, guild.id), { name: guild.name });
-                            });
-                        }
-                    }, (error) => {
-                        console.error("Error fetching guilds:", error);
-                    });
-                    
+                    console.log('Firebase user authenticated:', user.uid);
+                    await loadDiscordGuilds(currentUserId);
                 } else {
-                    try {
-                        let credential;
-                        if (initialAuthToken) {
-                            credential = await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            credential = await signInAnonymously(auth);
-                        }
-                        userId = credential.user.uid;
-                        console.log("Signed in successfully with token/anonymously:", userId);
-                        userIdDisplay.textContent = `User ID: ${userId}`;
-                        // Fetch server list after sign-in
-                        const guildsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'guilds');
-                        onSnapshot(guildsCollectionRef, (querySnapshot) => {
-                             serverSelect.innerHTML = '';
-                             const guilds = [];
-                             if (!querySnapshot.empty) {
-                                 querySnapshot.forEach(doc => {
-                                     const guild = doc.data();
-                                     guilds.push({ id: doc.id, name: guild.name });
-                                     const option = document.createElement('option');
-                                     option.value = doc.id;
-                                     option.textContent = guild.name;
-                                     serverSelect.appendChild(option);
-                                 });
-                                 if (guilds.length > 0) {
-                                     selectedServerId = guilds[0].id;
-                                     refreshDashboardData(selectedServerId, userId);
-                                 }
-                             } else {
-                                console.log("No guilds found. Creating mock data.");
-                                 const mockGuilds = [
-                                     { name: "PFNexus Community", id: "server_001" },
-                                     { name: "Bot Testing Server", id: "server_002" },
-                                     { name: "The Dev Lounge", id: "server_003" }
-                                 ];
-                                 mockGuilds.forEach(guild => {
-                                     setDoc(doc(guildsCollectionRef, guild.id), { name: guild.name });
-                                 });
-                             }
-                        }, (error) => {
-                            console.error("Error fetching guilds:", error);
-                        });
-                    } catch (error) {
-                        console.error("Firebase Auth failed:", error);
-                        showModal("Authentication Error", `There was a problem signing in. Please try again. Error: ${error.message}`);
-                    }
+                    console.warn('Firebase user is not authenticated.');
+                    // Redirect to login if not authenticated
+                    showMessage('Session expired. Redirecting to login.', 'error');
+                    setTimeout(() => window.location.href = 'index.html', 2000);
                 }
             });
-
-            // Add change event listener to the server select dropdown
-            serverSelect.addEventListener('change', (event) => {
-                selectedServerId = event.target.value;
-                refreshDashboardData(selectedServerId, userId);
-                // Also close the sidebar on mobile after selecting a server
-                if (window.innerWidth < 768) {
-                    sidebar.classList.remove('translate-x-0');
-                    sidebar.classList.add('-translate-x-full');
-                }
-            });
-            
-            // Add click event listeners to sidebar links
-            sidebarLinks.forEach(link => {
-                link.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    const page = link.getAttribute('data-page') + '-page';
-                    showPage(page);
-                    // Close sidebar on mobile after clicking a link
-                    if (window.innerWidth < 768) {
-                        sidebar.classList.remove('translate-x-0');
-                        sidebar.classList.add('-translate-x-full');
-                    }
-                });
-            });
-
-            // Handle logout button click
-            logoutButton.addEventListener('click', () => {
-                showModal("Confirm Logout", "Are you sure you want to log out of your PFNexus account? You will need to log in again to access your dashboard.");
-            });
-            
-            // Set initial active page and link
-            showPage('dashboard-page');
         });
+
+        // Function to show messages in a stylized box
+        function showMessage(message, type) {
+            messageArea.textContent = message;
+            messageArea.classList.remove('hidden', 'bg-green-700', 'bg-red-700', 'bg-yellow-700');
+            if (type === 'success') {
+                messageArea.classList.add('bg-green-700');
+            } else if (type === 'error') {
+                messageArea.classList.add('bg-red-700');
+            } else if (type === 'warning') {
+                messageArea.classList.add('bg-yellow-700');
+            }
+        }
+
+        // Function to load the user's Discord guilds from Firestore
+        async function loadDiscordGuilds(userId) {
+            try {
+                // The bot writes the guilds for the user to this location
+                const guildsRef = doc(db, `artifacts/${appId}/users/${userId}/discordData/guilds`);
+                
+                // Use onSnapshot for real-time updates
+                onSnapshot(guildsRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const guilds = docSnap.data().list || [];
+                        console.log('Guilds loaded:', guilds);
+                        populateGuildSelect(guilds);
+                    } else {
+                        console.warn('No guild data found for this user.');
+                        showMessage('No guild data found. Please ensure the bot is in your servers and you have permission.', 'warning');
+                        populateGuildSelect([]);
+                    }
+                }, (error) => {
+                    console.error('Error fetching guilds:', error);
+                    showMessage('Error loading guild data: ' + error.message, 'error');
+                    populateGuildSelect([]);
+                });
+            } catch (e) {
+                console.error('Error setting up guild listener:', e);
+                showMessage('Failed to load guilds. Please check the console for details.', 'error');
+                populateGuildSelect([]);
+            }
+        }
+
+        // Function to populate the dropdown with guild options
+        function populateGuildSelect(guilds) {
+            guildSelect.innerHTML = '<option value="">-- Please select a server --</option>';
+            guilds.forEach(guild => {
+                const option = document.createElement('option');
+                option.value = guild.id;
+                option.textContent = guild.name;
+                guildSelect.appendChild(option);
+            });
+            // Show the guild select and hide config card on repopulate
+            configCard.classList.add('hidden');
+        }
+
+        // Event listener for guild selection change
+        guildSelect.addEventListener('change', (e) => {
+            const guildId = e.target.value;
+            if (guildId) {
+                loadGuildConfig(guildId);
+            } else {
+                configCard.classList.add('hidden');
+                welcomeMessageInput.value = '';
+                welcomeChannelIdInput.value = '';
+                customPrefixInput.value = '';
+                if (unsubscribeConfig) {
+                    unsubscribeConfig(); // Cleanup old listener
+                    unsubscribeConfig = null;
+                }
+            }
+        });
+
+        // Function to load a specific guild's configuration from Firestore
+        function loadGuildConfig(guildId) {
+            // Unsubscribe from previous listener if it exists
+            if (unsubscribeConfig) {
+                unsubscribeConfig();
+            }
+            
+            const configRef = doc(db, `artifacts/${appId}/public/data/guildConfigs/${guildId}`);
+            
+            // Listen for real-time changes to the guild configuration
+            unsubscribeConfig = onSnapshot(configRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    console.log('Config loaded:', data);
+                    welcomeMessageInput.value = data.welcomeMessage || '';
+                    welcomeChannelIdInput.value = data.welcomeChannelId || '';
+                    customPrefixInput.value = data.customPrefix || '!';
+                } else {
+                    console.warn(`No config found for guild ${guildId}, using defaults.`);
+                    welcomeMessageInput.value = '';
+                    welcomeChannelIdInput.value = '';
+                    customPrefixInput.value = '!';
+                }
+                configCard.classList.remove('hidden');
+            }, (error) => {
+                console.error('Error fetching config:', error);
+                showMessage('Error loading configuration: ' + error.message, 'error');
+            });
+        }
+
+        // Event listener for the save button
+        saveBtn.addEventListener('click', async () => {
+            const selectedGuildId = guildSelect.value;
+            if (!selectedGuildId) {
+                showMessage('Please select a server before saving.', 'error');
+                return;
+            }
+
+            const configRef = doc(db, `artifacts/${appId}/public/data/guildConfigs/${selectedGuildId}`);
+            
+            const newConfig = {
+                welcomeMessage: welcomeMessageInput.value,
+                welcomeChannelId: welcomeChannelIdInput.value,
+                customPrefix: customPrefixInput.value,
+            };
+
+            try {
+                await setDoc(configRef, newConfig);
+                showMessage('Configuration saved successfully!', 'success');
+            } catch (e) {
+                console.error('Error saving config:', e);
+                showMessage('Failed to save configuration: ' + e.message, 'error');
+            }
+        });
+
+        // Event listener for the logout button
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                // Redirect back to the login page
+                window.location.href = 'index.html';
+            } catch (e) {
+                console.error('Logout failed:', e);
+                showMessage('Logout failed. Please try again.', 'error');
+            }
+        });
+
     </script>
 </body>
 </html>
